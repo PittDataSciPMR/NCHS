@@ -171,1102 +171,394 @@ pre code {
 </div>
 
 
-<p>Goal: TO download the complete dataset, clean and split into subsets for downstream analyses.</p>
-<pre class="r"><code>library(readr)
+<div id="goal-to-download-the-complete-dataset-clean-and-split-into-subsets-for-downstream-analyses." class="section level3">
+<h3>Goal: To download the complete dataset, clean and split into subsets for downstream analyses.</h3>
+<pre class="r"><code>rm(list = ls())
+library(readr)
+library(plyr)
+library(dplyr)
+library(survey)
+library(srvyr)</code></pre>
+<pre class="r"><code>dat16&lt;- read_csv(&quot;2016NSCHTopical_DRCv3_Sep2018.csv&quot;)
+dat17_18&lt;- read_csv(&quot;2017-2018 NSCH_Topical_DRC_Dec 2019.csv&quot;)
+dat19_20&lt;- read_csv(&quot;2019-2020 NSCH_Topical_CAHMI_DRC.csv&quot;)</code></pre>
+</div>
+<div id="for-each-year-adjust-the-weights-so-that-the-dataset-can-be-combined" class="section level3">
+<h3>For each year, adjust the weights so that the dataset can be combined</h3>
+<pre class="r"><code>dat16$FWC_adj&lt;-dat16$FWC/5
+dat17_18$FWC_adj&lt;-(dat17_18$FWC_1718*2)/5
+dat19_20$FWC_adj&lt;-(dat19_20$fwc_1920*2)/5</code></pre>
+</div>
+<div id="select-variables-from-each-year" class="section level3">
+<h3>Select variables from each year</h3>
+<pre class="r"><code>dat19_20b&lt;-dat19_20%&gt;%
+  select(             HHID,FIPSST,STRATUM,
+                      instype_1920,
+                        SC_AGE_YEARS,
+                       SC_SEX,
+                        SC_RACE_R,
+                        #   sc_race_ethnic_16to20,
+               famstruct5_1920,
+               contains(&quot;fpl&quot;),
+               HHLANGUAGE,
+               FAMCOUNT,
+               # Child Health Complexity Variables
+               HCABILITY,
+               HCEXTENT,
+               ATHOMEHC,
+               ARRANGEHC,
+               K4Q22_R,
+               K4Q23,
+               K4Q24_R,
+               K4Q36,
+               K4Q01,
+               K4Q02_R,
+               HOSPITALER,
+               K4Q20R,
+               BREATHING,
+               SWALLOWING,
+               STOMACH,
+               BLINDNESS,
+               K2Q43B,
+               PHYSICALPAIN,
+               # maybe not use
+               HANDS,
+               COORDINATION,
+               MEMORYCOND,
+               WALKSTAIRS,
+               DRESSING,
+               # other predictors
+               C4Q04,
+               K5Q20_R,
+               K5Q21,
+               K8Q35,
+               K2Q05,
+               MOMAGE,
+               StopCutWork_1920,
+               AVOIDCHG,
+               # health conditions that could be categories
+                    # mood/behavior dx
+                    K2Q33C,
+                    K2Q32C,
+                    K2Q34C,
+                    # ASD
+                    K2Q35C,
+                    # brain injury
+                    #K2Q46C,
+                    # CP
+                    K2Q61B,
+                    # epilepsy/seizure
+                    K2Q42C,
+                    # develop delay
+                    K2Q36C,
+                    # ID
+                    K2Q60C,
+                    # speach/language dx
+                    K2Q37C,
+                    # learning disorder
+                    K2Q30C,
+                #weight
+                    FWC_adj)
 
-X2016NSCHTopical_DRCv3_Sep2018 &lt;- read_csv(&quot;2016NSCHTopical_DRCv3_Sep2018.csv&quot;)</code></pre>
-<pre><code>## Warning: One or more parsing issues, see `problems()` for details</code></pre>
-<pre><code>## Rows: 50212 Columns: 840</code></pre>
-<pre><code>## -- Column specification --------------------------------------------------------
-## Delimiter: &quot;,&quot;
-## chr   (1): FORMTYPE
-## dbl (837): HHID, FIPSST, TOTKIDS_R, HHLANGUAGE, SC_AGE_YEARS, SC_SEX, K2Q35A...
-## lgl   (2): ARTHRITIS_DESC, SUBABUSE_DESC</code></pre>
-<pre><code>## 
-## i Use `spec()` to retrieve the full column specification for this data.
-## i Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>X2017_2018_NSCH_Topical_DRC_Dec_2019 &lt;- read_csv(&quot;2017-2018 NSCH_Topical_DRC_Dec 2019.csv&quot;)</code></pre>
-<pre><code>## Rows: 52129 Columns: 745</code></pre>
-<pre><code>## -- Column specification --------------------------------------------------------
-## Delimiter: &quot;,&quot;
-## dbl (745): HHID, FIPSST, STRATUM, FORMTYPE, TOTKIDS_R, HHLANGUAGE, SC_AGE_YE...</code></pre>
-<pre><code>## 
-## i Use `spec()` to retrieve the full column specification for this data.
-## i Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>X2019_2020_NSCH_Topical_CAHMI_DRC &lt;- read_csv(&quot;2019-2020 NSCH_Topical_CAHMI_DRC.csv&quot;)</code></pre>
-<pre><code>## Rows: 72210 Columns: 820</code></pre>
-<pre><code>## -- Column specification --------------------------------------------------------
-## Delimiter: &quot;,&quot;
-## dbl (820): FIPSST, STRATUM, HHID, FORMTYPE, TOTKIDS_R, TENURE, HHLANGUAGE, S...</code></pre>
-<pre><code>## 
-## i Use `spec()` to retrieve the full column specification for this data.
-## i Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>colnames(X2016NSCHTopical_DRCv3_Sep2018)</code></pre>
-<pre><code>##   [1] &quot;HHID&quot;                  &quot;FIPSST&quot;                &quot;FORMTYPE&quot;             
-##   [4] &quot;TOTKIDS_R&quot;             &quot;HHLANGUAGE&quot;            &quot;SC_AGE_YEARS&quot;         
-##   [7] &quot;SC_SEX&quot;                &quot;K2Q35A_1_YEARS&quot;        &quot;MOMAGE&quot;               
-##  [10] &quot;K6Q41R_STILL&quot;          &quot;K6Q42R_NEVER&quot;          &quot;K6Q43R_NEVER&quot;         
-##  [13] &quot;K6Q13A&quot;                &quot;K6Q13B&quot;                &quot;K6Q14A&quot;               
-##  [16] &quot;K6Q14B&quot;                &quot;K4Q32X01&quot;              &quot;K4Q32X02&quot;             
-##  [19] &quot;K4Q32X03&quot;              &quot;K4Q32X04&quot;              &quot;K4Q32X05&quot;             
-##  [22] &quot;DENTALSERV1&quot;           &quot;DENTALSERV2&quot;           &quot;DENTALSERV3&quot;          
-##  [25] &quot;DENTALSERV4&quot;           &quot;DENTALSERV5&quot;           &quot;DENTALSERV6&quot;          
-##  [28] &quot;DENTALSERV7&quot;           &quot;K4Q28X01&quot;              &quot;K4Q28X02&quot;             
-##  [31] &quot;K4Q28X03&quot;              &quot;K4Q28X_EAR&quot;            &quot;K4Q28X04&quot;             
-##  [34] &quot;K4Q28X05&quot;              &quot;SESPLANYR&quot;             &quot;SESPLANMO&quot;            
-##  [37] &quot;K4Q37&quot;                 &quot;SPCSERVMO&quot;             &quot;LIVEUSA_YR&quot;           
-##  [40] &quot;LIVEUSA_MO&quot;            &quot;K11Q43R&quot;               &quot;A1_AGE&quot;               
-##  [43] &quot;A1_LIVEUSA&quot;            &quot;A2_AGE&quot;                &quot;A2_LIVEUSA&quot;           
-##  [46] &quot;HHCOUNT&quot;               &quot;FAMCOUNT&quot;              &quot;BREATHING&quot;            
-##  [49] &quot;SWALLOWING&quot;            &quot;STOMACH&quot;               &quot;PHYSICALPAIN&quot;         
-##  [52] &quot;HANDS&quot;                 &quot;COORDINATION&quot;          &quot;TOOTHACHES&quot;           
-##  [55] &quot;GUMBLEED&quot;              &quot;CAVITIES&quot;              &quot;MEMORYCOND&quot;           
-##  [58] &quot;WALKSTAIRS&quot;            &quot;DRESSING&quot;              &quot;ERRANDALONE&quot;          
-##  [61] &quot;K2Q43B&quot;                &quot;BLINDNESS&quot;             &quot;ALLERGIES&quot;            
-##  [64] &quot;ALLERGIES_CURR&quot;        &quot;ARTHRITIS&quot;             &quot;ARTHRITIS_CURR&quot;       
-##  [67] &quot;K2Q40A&quot;                &quot;K2Q40B&quot;                &quot;BLOOD&quot;                
-##  [70] &quot;BLOOD_CURR&quot;            &quot;K2Q46A&quot;                &quot;K2Q46B&quot;               
-##  [73] &quot;K2Q61A&quot;                &quot;K2Q61B&quot;                &quot;CYSTFIB&quot;              
-##  [76] &quot;CYSTFIB_CURR&quot;          &quot;K2Q41A&quot;                &quot;K2Q41B&quot;               
-##  [79] &quot;DOWNSYN&quot;               &quot;DOWNSYN_CURR&quot;          &quot;K2Q42A&quot;               
-##  [82] &quot;K2Q42B&quot;                &quot;GENETIC&quot;               &quot;GENETIC_CURR&quot;         
-##  [85] &quot;HEART&quot;                 &quot;HEART_CURR&quot;            &quot;HEADACHE&quot;             
-##  [88] &quot;HEADACHE_CURR&quot;         &quot;K2Q38A&quot;                &quot;K2Q38B&quot;               
-##  [91] &quot;K2Q33A&quot;                &quot;K2Q33B&quot;                &quot;K2Q32A&quot;               
-##  [94] &quot;K2Q32B&quot;                &quot;K2Q34A&quot;                &quot;K2Q34B&quot;               
-##  [97] &quot;SUBABUSE&quot;              &quot;SUBABUSE_CURR&quot;         &quot;K2Q36A&quot;               
-## [100] &quot;K2Q36B&quot;                &quot;K2Q60A&quot;                &quot;K2Q60B&quot;               
-## [103] &quot;K2Q37A&quot;                &quot;K2Q37B&quot;                &quot;K2Q30A&quot;               
-## [106] &quot;K2Q30B&quot;                &quot;ANYOTHER&quot;              &quot;ANYOTHER_CURR&quot;        
-## [109] &quot;K2Q35A&quot;                &quot;K2Q35B&quot;                &quot;AUTISMMED&quot;            
-## [112] &quot;AUTISMTREAT&quot;           &quot;K2Q31A&quot;                &quot;K2Q31B&quot;               
-## [115] &quot;K2Q31D&quot;                &quot;ADDTREAT&quot;              &quot;K2Q05&quot;                
-## [118] &quot;K6Q40&quot;                 &quot;S4Q01&quot;                 &quot;DOCPRIVATE&quot;           
-## [121] &quot;K6Q10&quot;                 &quot;K6Q12&quot;                 &quot;K4Q01&quot;                
-## [124] &quot;USUALGO&quot;               &quot;USUALSICK&quot;             &quot;K4Q31_R&quot;              
-## [127] &quot;K4Q23&quot;                 &quot;ALTHEALTH&quot;             &quot;K4Q27&quot;                
-## [130] &quot;NOTELIG&quot;               &quot;AVAILABLE&quot;             &quot;APPOINTMENT&quot;          
-## [133] &quot;TRANSPORTCC&quot;           &quot;NOTOPEN&quot;               &quot;ISSUECOST&quot;            
-## [136] &quot;K6Q15&quot;                 &quot;SESCURRSVC&quot;            &quot;K4Q36&quot;                
-## [139] &quot;K4Q38&quot;                 &quot;K5Q10&quot;                 &quot;DECISIONS&quot;            
-## [142] &quot;K5Q21&quot;                 &quot;TREATCHILD&quot;            &quot;TREATADULT&quot;           
-## [145] &quot;WRITEPLAN&quot;             &quot;PLANNEEDS&quot;             &quot;RECEIVECOPY&quot;          
-## [148] &quot;PLANUTD&quot;               &quot;HEALTHKNOW&quot;            &quot;KEEPINSADULT&quot;         
-## [151] &quot;K12Q01_A&quot;              &quot;K12Q01_B&quot;              &quot;K12Q01_C&quot;             
-## [154] &quot;K12Q01_D&quot;              &quot;K12Q01_E&quot;              &quot;K12Q01_F&quot;             
-## [157] &quot;K12Q01_G&quot;              &quot;CURRCOV&quot;               &quot;K12Q03&quot;               
-## [160] &quot;K12Q04&quot;                &quot;K12Q12&quot;                &quot;TRICARE&quot;              
-## [163] &quot;K11Q03R&quot;               &quot;HCCOVOTH&quot;              &quot;K3Q25&quot;                
-## [166] &quot;STOPWORK&quot;              &quot;CUTHOURS&quot;              &quot;AVOIDCHG&quot;             
-## [169] &quot;RHYMEWORD&quot;             &quot;REPEATED&quot;              &quot;K7Q30&quot;                
-## [172] &quot;K7Q31&quot;                 &quot;K7Q32&quot;                 &quot;K7Q37&quot;                
-## [175] &quot;K7Q38&quot;                 &quot;BORNUSA&quot;               &quot;K8Q35&quot;                
-## [178] &quot;EMOSUPSPO&quot;             &quot;EMOSUPHCP&quot;             &quot;EMOSUPFAM&quot;            
-## [181] &quot;EMOSUPWOR&quot;             &quot;EMOSUPADV&quot;             &quot;EMOSUPPEER&quot;           
-## [184] &quot;EMOSUPMHP&quot;             &quot;EMOSUPOTH&quot;             &quot;K6Q20&quot;                
-## [187] &quot;K6Q27&quot;                 &quot;K9Q40&quot;                 &quot;K9Q41&quot;                
-## [190] &quot;K11Q60&quot;                &quot;K11Q61&quot;                &quot;K11Q62&quot;               
-## [193] &quot;S9Q34&quot;                 &quot;K10Q11&quot;                &quot;K10Q12&quot;               
-## [196] &quot;K10Q13&quot;                &quot;K10Q14&quot;                &quot;K10Q20&quot;               
-## [199] &quot;K10Q22&quot;                &quot;K10Q23&quot;                &quot;K9Q96&quot;                
-## [202] &quot;ACE3&quot;                  &quot;ACE4&quot;                  &quot;ACE5&quot;                 
-## [205] &quot;ACE6&quot;                  &quot;ACE7&quot;                  &quot;ACE8&quot;                 
-## [208] &quot;ACE9&quot;                  &quot;ACE10&quot;                 &quot;A1_K11Q50_R&quot;          
-## [211] &quot;A2_K11Q50_R&quot;           &quot;K6Q70_R&quot;               &quot;K6Q73_R&quot;              
-## [214] &quot;K6Q71_R&quot;               &quot;K6Q72_R&quot;               &quot;K7Q84_R&quot;              
-## [217] &quot;K7Q85_R&quot;               &quot;K7Q82_R&quot;               &quot;K7Q83_R&quot;              
-## [220] &quot;BULLIED&quot;               &quot;K7Q71_R&quot;               &quot;K7Q70_R&quot;              
-## [223] &quot;ALLERGIES_DESC&quot;        &quot;ARTHRITIS_DESC&quot;        &quot;K2Q40C&quot;               
-## [226] &quot;BLOOD_DESC&quot;            &quot;K2Q46C&quot;                &quot;CERPALS_DESC&quot;         
-## [229] &quot;K2Q41C&quot;                &quot;DOWNSYN_DESC&quot;          &quot;K2Q42C&quot;               
-## [232] &quot;GENETIC_DESC&quot;          &quot;HEART_DESC&quot;            &quot;HEADACHE_DESC&quot;        
-## [235] &quot;K2Q38C&quot;                &quot;K2Q33C&quot;                &quot;K2Q32C&quot;               
-## [238] &quot;K2Q34C&quot;                &quot;SUBABUSE_DESC&quot;         &quot;K2Q36C&quot;               
-## [241] &quot;K2Q60C&quot;                &quot;K2Q37C&quot;                &quot;K2Q30C&quot;               
-## [244] &quot;ANYOTHER_DESC&quot;         &quot;K2Q35C&quot;                &quot;K2Q31C&quot;               
-## [247] &quot;K2Q01&quot;                 &quot;K2Q01_D&quot;               &quot;K5Q40&quot;                
-## [250] &quot;K5Q41&quot;                 &quot;K5Q42&quot;                 &quot;K5Q43&quot;                
-## [253] &quot;K5Q44&quot;                 &quot;DISCUSSOPT&quot;            &quot;RAISECONC&quot;            
-## [256] &quot;BESTFORCHILD&quot;          &quot;K3Q20&quot;                 &quot;K3Q22&quot;                
-## [259] &quot;K3Q21B&quot;                &quot;RECOGBEGIN&quot;            &quot;RECOGABC&quot;             
-## [262] &quot;CLEAREXP&quot;              &quot;WRITENAME&quot;             &quot;RECSHAPES&quot;            
-## [265] &quot;DISTRACTED&quot;            &quot;WORKTOFIN&quot;             &quot;SIMPLEINST&quot;           
-## [268] &quot;PLAYWELL&quot;              &quot;SITSTILL&quot;              &quot;TALKABOUT&quot;            
-## [271] &quot;WKTOSOLVE&quot;             &quot;STRENGTHS&quot;             &quot;HOPEFUL&quot;              
-## [274] &quot;NEWACTIVITY&quot;           &quot;HURTSAD&quot;               &quot;CALMDOWN&quot;             
-## [277] &quot;TEMPER&quot;                &quot;A1_PHYSHEALTH&quot;         &quot;A1_MENTHEALTH&quot;        
-## [280] &quot;A2_PHYSHEALTH&quot;         &quot;A2_MENTHEALTH&quot;         &quot;K10Q30&quot;               
-## [283] &quot;K10Q31&quot;                &quot;K10Q40_R&quot;              &quot;GOFORHELP&quot;            
-## [286] &quot;K10Q41_R&quot;              &quot;ATHOMEHC&quot;              &quot;ARRANGEHC&quot;            
-## [289] &quot;K7Q02R_R&quot;              &quot;K7Q04R_R&quot;              &quot;PHYSACTIV&quot;            
-## [292] &quot;HOURSLEEP05&quot;           &quot;HOURSLEEP&quot;             &quot;K7Q60_R&quot;              
-## [295] &quot;K7Q91_R&quot;               &quot;K6Q60_R&quot;               &quot;K6Q61_R&quot;              
-## [298] &quot;K8Q11&quot;                 &quot;FOODSIT&quot;               &quot;HOWMUCH&quot;              
-## [301] &quot;A1_RELATION&quot;           &quot;A1_SEX&quot;                &quot;A1_BORN&quot;              
-## [304] &quot;A1_GRADE&quot;              &quot;A1_MARITAL&quot;            &quot;A2_RELATION&quot;          
-## [307] &quot;A2_SEX&quot;                &quot;A2_BORN&quot;               &quot;A2_GRADE&quot;             
-## [310] &quot;A2_MARITAL&quot;            &quot;PLANFUTURE&quot;            &quot;POSCHOICE&quot;            
-## [313] &quot;GAINSKILLS&quot;            &quot;CHANGEAGE&quot;             &quot;K2Q35D&quot;               
-## [316] &quot;HCABILITY&quot;             &quot;HCEXTENT&quot;              &quot;K4Q20R&quot;               
-## [319] &quot;DOCROOM&quot;               &quot;WGTCONC&quot;               &quot;K4Q02_R&quot;              
-## [322] &quot;DENTISTVISIT&quot;          &quot;K4Q22_R&quot;               &quot;TREATNEED&quot;            
-## [325] &quot;K4Q24_R&quot;               &quot;K4Q26&quot;                 &quot;C4Q04&quot;                
-## [328] &quot;HOSPITALER&quot;            &quot;K4Q04_R&quot;               &quot;K5Q11&quot;                
-## [331] &quot;K5Q20_R&quot;               &quot;K5Q22&quot;                 &quot;K5Q30&quot;                
-## [334] &quot;K5Q32&quot;                 &quot;K5Q31_R&quot;               &quot;K8Q31&quot;                
-## [337] &quot;K8Q32&quot;                 &quot;K8Q34&quot;                 &quot;K8Q21&quot;                
-## [340] &quot;K8Q30&quot;                 &quot;COUNTTO&quot;               &quot;K7Q33&quot;                
-## [343] &quot;BEDTIME&quot;               &quot;K3Q04_R&quot;               &quot;K6Q08_R&quot;              
-## [346] &quot;CONFIDENT&quot;             &quot;ACE1&quot;                  &quot;USEPENCIL&quot;            
-## [349] &quot;MAKEFRIEND&quot;            &quot;SLEEPPOS&quot;              &quot;K4Q30_R&quot;              
-## [352] &quot;STARTSCHOOL&quot;           &quot;MENBEVCOV&quot;             &quot;EXPULSION&quot;            
-## [355] &quot;AGEPOS4&quot;               &quot;TOTMALE&quot;               &quot;TOTFEMALE&quot;            
-## [358] &quot;TOTAGE_0_5&quot;            &quot;TOTAGE_6_11&quot;           &quot;TOTAGE_12_17&quot;         
-## [361] &quot;TOTCSHCN&quot;              &quot;TOTNONSHCN&quot;            &quot;SC_RACE_R&quot;            
-## [364] &quot;SC_RACER&quot;              &quot;SC_RACEASIA&quot;           &quot;SC_RACEAIAN&quot;          
-## [367] &quot;SC_HISPANIC_R&quot;         &quot;SC_CSHCN&quot;              &quot;SC_K2Q10&quot;             
-## [370] &quot;SC_K2Q11&quot;              &quot;SC_K2Q12&quot;              &quot;SC_K2Q13&quot;             
-## [373] &quot;SC_K2Q14&quot;              &quot;SC_K2Q15&quot;              &quot;SC_K2Q16&quot;             
-## [376] &quot;SC_K2Q17&quot;              &quot;SC_K2Q18&quot;              &quot;SC_K2Q19&quot;             
-## [379] &quot;SC_K2Q20&quot;              &quot;SC_K2Q21&quot;              &quot;SC_K2Q22&quot;             
-## [382] &quot;SC_K2Q23&quot;              &quot;SC_AGE_LT4&quot;            &quot;SC_AGE_LT6&quot;           
-## [385] &quot;SC_AGE_LT9&quot;            &quot;SC_AGE_LT10&quot;           &quot;BIRTHWT_OZ_S&quot;         
-## [388] &quot;BREASTFEDEND_DAY_S&quot;    &quot;BREASTFEDEND_MO_S&quot;     &quot;FRSTFORMULA_DAY_S&quot;    
-## [391] &quot;FRSTFORMULA_MO_S&quot;      &quot;FRSTSOLIDS_DAY_S&quot;      &quot;FRSTSOLIDS_MO_S&quot;      
-## [394] &quot;BMICLASS&quot;              &quot;A1_GRADE_I&quot;            &quot;FAMILY&quot;               
-## [397] &quot;FPL&quot;                   &quot;HIGRADE&quot;               &quot;HIGRADE_TVIS&quot;         
-## [400] &quot;BIRTHWT_VL&quot;            &quot;BIRTHWT_L&quot;             &quot;BREASTFEDEND_WK_S&quot;    
-## [403] &quot;FRSTFORMULA_WK_S&quot;      &quot;FRSTSOLIDS_WK_S&quot;       &quot;YEAR&quot;                 
-## [406] &quot;METRO_YN&quot;              &quot;MPC_YN&quot;                &quot;STRATUM&quot;              
-## [409] &quot;SC_SEX_IF&quot;             &quot;SC_HISPANIC_R_IF&quot;      &quot;SC_RACE_R_IF&quot;         
-## [412] &quot;A1_GRADE_IF&quot;           &quot;BIRTHWT&quot;               &quot;CBSAFP_YN&quot;            
-## [415] &quot;FWC&quot;                   &quot;CURRINS&quot;               &quot;INSTYPE&quot;              
-## [418] &quot;HOUSE_GEN&quot;             &quot;HHSIZE_I&quot;              &quot;HHSIZE_IF&quot;            
-## [421] &quot;FPL_IF&quot;                &quot;INSGAP&quot;                &quot;STATE&quot;                
-## [424] &quot;hrsareg&quot;               &quot;age3_16&quot;               &quot;age5_16&quot;              
-## [427] &quot;age1to17_16&quot;           &quot;age3to17_16&quot;           &quot;age6to17_16&quot;          
-## [430] &quot;age10to17_16&quot;          &quot;sex_16&quot;                &quot;hispanic_16&quot;          
-## [433] &quot;race4_16&quot;              &quot;raceASIA_16&quot;           &quot;PrntNativity_16&quot;      
-## [436] &quot;HHLanguage_16&quot;         &quot;hisplang_16&quot;           &quot;famstruct_16&quot;         
-## [439] &quot;povlev4_16&quot;            &quot;povSCHIP_16&quot;           &quot;AdultEduc_16&quot;         
-## [442] &quot;ChHlthSt_16&quot;           &quot;TeethCond_16&quot;          &quot;toothache_16&quot;         
-## [445] &quot;gumbleed_16&quot;           &quot;cavities_16&quot;           &quot;ctOralProb_16&quot;        
-## [448] &quot;OralProb_16&quot;           &quot;BrstEver_16&quot;           &quot;BrstStop_16&quot;          
-## [451] &quot;FedForm_16&quot;            &quot;FedOther_16&quot;           &quot;ExBrstFd_16&quot;          
-## [454] &quot;BMI4_16&quot;               &quot;BMI3_16&quot;               &quot;BMI2_16&quot;              
-## [457] &quot;PhysAct_16&quot;            &quot;WgtConcn_16&quot;           &quot;LowBWght_16&quot;          
-## [460] &quot;VeryLBWght_16&quot;         &quot;BornPre_16&quot;            &quot;allergies_16&quot;         
-## [463] &quot;arthritis_16&quot;          &quot;asthma_16&quot;             &quot;blood_16&quot;             
-## [466] &quot;BrainInj_16&quot;           &quot;palsy_16&quot;              &quot;CystFib_16&quot;           
-## [469] &quot;diabetes_16&quot;           &quot;DownSynd_16&quot;           &quot;seizure_16&quot;           
-## [472] &quot;genetic_16&quot;            &quot;heart_16&quot;              &quot;headache_16&quot;          
-## [475] &quot;tourette_16&quot;           &quot;anxiety_16&quot;            &quot;depress_16&quot;           
-## [478] &quot;behavior_16&quot;           &quot;SubAbuse_16&quot;           &quot;DevDelay_16&quot;          
-## [481] &quot;IntDisab_16&quot;           &quot;speech_16&quot;             &quot;learning_16&quot;          
-## [484] &quot;OthrMent_16&quot;           &quot;autism_16&quot;             &quot;ADHD_16&quot;              
-## [487] &quot;hearing_16&quot;            &quot;vision_16&quot;             &quot;CondCnt27_16&quot;         
-## [490] &quot;Cond2more27_16&quot;        &quot;Cond1more27_16&quot;        &quot;AllerSev_16&quot;          
-## [493] &quot;ArthrSev_16&quot;           &quot;AsthmSev_16&quot;           &quot;BloodSev_16&quot;          
-## [496] &quot;BrainSev_16&quot;           &quot;PalsySev_16&quot;           &quot;DiabetSev_16&quot;         
-## [499] &quot;DownSSev_16&quot;           &quot;SeizSev_16&quot;            &quot;GenetSev_16&quot;          
-## [502] &quot;HeartSev_16&quot;           &quot;HeadSev_16&quot;            &quot;TouretSev_16&quot;         
-## [505] &quot;AnxietSev_16&quot;          &quot;DepresSev_16&quot;          &quot;BehavSev_16&quot;          
-## [508] &quot;SubAbSev_16&quot;           &quot;DevDelSev_16&quot;          &quot;IntDisSev_16&quot;         
-## [511] &quot;SpeechSev_16&quot;          &quot;LearnSev_16&quot;           &quot;OthMHSev_16&quot;          
-## [514] &quot;AutismSev_16&quot;          &quot;ADHDSev_16&quot;            &quot;DiffBreath_16&quot;        
-## [517] &quot;DiffSwall_16&quot;          &quot;DiffDigest_16&quot;         &quot;DiffPain_16&quot;          
-## [520] &quot;DiffHands_16&quot;          &quot;DiffCoor_16&quot;           &quot;DiffMem_16&quot;           
-## [523] &quot;DiffWalk_16&quot;           &quot;DiffDress_16&quot;          &quot;DiffErrand_16&quot;        
-## [526] &quot;cntdiff&quot;               &quot;Diff2more_16&quot;          &quot;Diff1more_16&quot;         
-## [529] &quot;rxmeds_16&quot;             &quot;serve_16&quot;              &quot;func_16&quot;              
-## [532] &quot;therapy_16&quot;            &quot;mhealth_16&quot;            &quot;qualnum_16&quot;           
-## [535] &quot;qualnum4_16&quot;           &quot;CSHCN_16&quot;              &quot;CSHCNtype_16&quot;         
-## [538] &quot;CSHCNComplex_16&quot;       &quot;mhneeds_16&quot;            &quot;DailyAct_16&quot;          
-## [541] &quot;bully_16&quot;              &quot;bullied_16&quot;            &quot;tender_16&quot;            
-## [544] &quot;resil0to5_16&quot;          &quot;curious0to5_16&quot;        &quot;smile_16&quot;             
-## [547] &quot;flrsh0to5ct&quot;           &quot;flrish0to5_16&quot;         &quot;curious6to17_16&quot;      
-## [550] &quot;finishes_16&quot;           &quot;resil6to17_16&quot;         &quot;resil6to17_2_16&quot;      
-## [553] &quot;flrsh6to17ct&quot;          &quot;flrish6to17_16&quot;        &quot;flrish6to17_2_16&quot;     
-## [556] &quot;argue_16&quot;              &quot;MakeFriend_16&quot;         &quot;ADHDind_16&quot;           
-## [559] &quot;ADHDSevInd_16&quot;         &quot;ADHDMed_16&quot;            &quot;ADHDBehTreat_16&quot;      
-## [562] &quot;AutismInd_16&quot;          &quot;ASDSevInd_16&quot;          &quot;ASDMed_16&quot;            
-## [565] &quot;ASDBehTreat_16&quot;        &quot;ASDAge_16&quot;             &quot;ASDDrType_16&quot;         
-## [568] &quot;MedEmotion_16&quot;         &quot;CurrIns_16&quot;            &quot;InsGap_16&quot;            
-## [571] &quot;instype_16&quot;            &quot;instype4_16&quot;           &quot;instype3_16&quot;          
-## [574] &quot;instype2_16&quot;           &quot;benefits_16&quot;           &quot;allows_16&quot;            
-## [577] &quot;expense_16&quot;            &quot;InsAdeq_16&quot;            &quot;insurance_16&quot;         
-## [580] &quot;InsMentH_16&quot;           &quot;OutOfPckt_16&quot;          &quot;NoCovEmp_16&quot;          
-## [583] &quot;NoCovOverdue_16&quot;       &quot;NoCovUnafford_16&quot;      &quot;NoCovBenInadeq_16&quot;    
-## [586] &quot;NoCovProvInadeq_16&quot;    &quot;NoCovRenew_16&quot;         &quot;NoCovOther_16&quot;        
-## [589] &quot;MedCare_16&quot;            &quot;PrevMed_16&quot;            &quot;VisitTime_16&quot;         
-## [592] &quot;PrivateTalk_16&quot;        &quot;DentCare_16&quot;           &quot;PrevDent_16&quot;          
-## [595] &quot;MedDentCare_16&quot;        &quot;MentHCare_16&quot;          &quot;MentHProb_16&quot;         
-## [598] &quot;SpecCare_16&quot;           &quot;SpCareProb_16&quot;         &quot;VisnTest_16&quot;          
-## [601] &quot;ERVisit_16&quot;            &quot;ERVisit1more_16&quot;       &quot;AlterHC_16&quot;           
-## [604] &quot;Ct1NumbSer_16&quot;         &quot;Num1Service_16&quot;        &quot;DrAskConc_16&quot;         
-## [607] &quot;both_9to23&quot;            &quot;both_24to35&quot;           &quot;DevScrnng_16&quot;         
-## [610] &quot;SpecServ_16&quot;           &quot;SpSerAge_16&quot;           &quot;PerDrNs_16&quot;           
-## [613] &quot;UsualSck_16&quot;           &quot;UsualPrev_16&quot;          &quot;time_16&quot;              
-## [616] &quot;listen_16&quot;             &quot;sensitiv_16&quot;           &quot;info_16&quot;              
-## [619] &quot;partner_16&quot;            &quot;FamCent_16&quot;            &quot;NoRefPrb_16&quot;          
-## [622] &quot;NoRefPrb2_16&quot;          &quot;DrComm_16&quot;             &quot;DrCommR_16&quot;           
-## [625] &quot;HelpCoord_16&quot;          &quot;ExtraHelp_16&quot;          &quot;AllExtraHelp_16&quot;      
-## [628] &quot;CareHelp_16&quot;           &quot;OthComm_16&quot;            &quot;OtherComm_16&quot;         
-## [631] &quot;SatOthComm_16&quot;         &quot;CareCoor_16&quot;           &quot;CareCoorR_16&quot;         
-## [634] &quot;MedHome_16&quot;            &quot;DiscussOpt_16&quot;         &quot;RaiseConc_16&quot;         
-## [637] &quot;BestChoice_16&quot;         &quot;ShareDec_16&quot;           &quot;TimeAlone_16&quot;         
-## [640] &quot;ActiveWork_16&quot;         &quot;TrtChild_16&quot;           &quot;TrtAdult_16&quot;          
-## [643] &quot;Transition_16&quot;         &quot;frustrated_16&quot;         &quot;UnmetFrust_16&quot;        
-## [646] &quot;sys0to11care2_16&quot;      &quot;sys12to17care2_16&quot;     &quot;SystCare2_16&quot;         
-## [649] &quot;ForgoneCare_16&quot;        &quot;UnmetMed_16&quot;           &quot;UnmetDent_16&quot;         
-## [652] &quot;UnmetVis_16&quot;           &quot;UnmetHear_16&quot;          &quot;UnmetMH_16&quot;           
-## [655] &quot;UnmetOther_16&quot;         &quot;MedBills_16&quot;           &quot;ineligible_16&quot;        
-## [658] &quot;unavailable_16&quot;        &quot;appointment_16&quot;        &quot;transport_16&quot;         
-## [661] &quot;NotOpen_16&quot;            &quot;CostIssue_16&quot;          &quot;SpEducPln_16&quot;         
-## [664] &quot;SpEdAge_16&quot;            &quot;cares_16&quot;              &quot;homework_16&quot;          
-## [667] &quot;SchlEngage_16&quot;         &quot;ReptGrade_16&quot;          &quot;SchlMiss_16&quot;          
-## [670] &quot;sports_16&quot;             &quot;clubs_16&quot;              &quot;lessons_16&quot;           
-## [673] &quot;partic_16&quot;             &quot;AftSchAct_16&quot;          &quot;EventPart_16&quot;         
-## [676] &quot;EventPart2_16&quot;         &quot;volunteer_16&quot;          &quot;workpay_16&quot;           
-## [679] &quot;mentor_16&quot;             &quot;StartSchl_16&quot;          &quot;LearnThings_16&quot;       
-## [682] &quot;RecogBegin_16&quot;         &quot;confident_16&quot;          &quot;RecogLetter_16&quot;       
-## [685] &quot;RhymeWord_16&quot;          &quot;ClearExp_16&quot;           &quot;WriteName_16&quot;         
-## [688] &quot;CountTo_16&quot;            &quot;RecogShapes_16&quot;        &quot;distracted_16&quot;        
-## [691] &quot;WorkToFin_16&quot;          &quot;SimpleInst_16&quot;         &quot;UsePencil_16&quot;         
-## [694] &quot;PlayWell_16&quot;           &quot;MakeFr3to5_16&quot;         &quot;NewActivity_16&quot;       
-## [697] &quot;HurtSad_16&quot;            &quot;CalmDown_16&quot;           &quot;temper_16&quot;            
-## [700] &quot;SitStill1_16&quot;          &quot;expulsion_16&quot;          &quot;mother1_16&quot;           
-## [703] &quot;mother2_16&quot;            &quot;mother_16&quot;             &quot;father1_16&quot;           
-## [706] &quot;father2_16&quot;            &quot;father_16&quot;             &quot;MothPhyH_16&quot;          
-## [709] &quot;FathPhyH_16&quot;           &quot;MotherMH_16&quot;           &quot;MotherMH2_16&quot;         
-## [712] &quot;FatherMH_16&quot;           &quot;MotherHSt_16&quot;          &quot;FatherHSt_16&quot;         
-## [715] &quot;smoking_16&quot;            &quot;SmkInside_16&quot;          &quot;work50hrs_16&quot;         
-## [718] &quot;WrkngPoor_16&quot;          &quot;ShareIdeas_16&quot;         &quot;readto_16&quot;            
-## [721] &quot;SingStory_16&quot;          &quot;MealTogether_16&quot;       &quot;TVwatch_16&quot;           
-## [724] &quot;CompElDev_16&quot;          &quot;TalkAbout_16&quot;          &quot;WrkToSolve_16&quot;        
-## [727] &quot;strengths_16&quot;          &quot;hopeful_16&quot;            &quot;CtFamRes_16&quot;          
-## [730] &quot;FamResilience_16&quot;      &quot;ACEincome_16&quot;          &quot;ACEincome2_16&quot;        
-## [733] &quot;ACEdivorce_16&quot;         &quot;ACEdeath_16&quot;           &quot;ACEjail_16&quot;           
-## [736] &quot;ACEdomviol_16&quot;         &quot;ACEneighviol_16&quot;       &quot;ACEmhealth_16&quot;        
-## [739] &quot;ACEdrug_16&quot;            &quot;ACEdiscrim_16&quot;         &quot;ACEct_16&quot;             
-## [742] &quot;ACE2more_16&quot;           &quot;ACE1more_16&quot;           &quot;ACE4more_16&quot;          
-## [745] &quot;DiffCare_16&quot;           &quot;bother_16&quot;             &quot;angry_16&quot;             
-## [748] &quot;angryR_16&quot;             &quot;ParAgg_ct&quot;             &quot;ParAggrav_16&quot;         
-## [751] &quot;EmSupport_16&quot;          &quot;EmSSpouse_16&quot;          &quot;EmSFamily_16&quot;         
-## [754] &quot;EmSProvider_16&quot;        &quot;EmSWorship_16&quot;         &quot;EmSSupGrp_16&quot;         
-## [757] &quot;EmSPeer_16&quot;            &quot;EmSMental_16&quot;          &quot;EmSOther_16&quot;          
-## [760] &quot;ParCoping_16&quot;          &quot;JobChange_16&quot;          &quot;StopCutWork_16&quot;       
-## [763] &quot;AvoidChng_16&quot;          &quot;HomeCare_16&quot;           &quot;TimeCoord_16&quot;         
-## [766] &quot;Care10hrs_16&quot;          &quot;SleepPos_16&quot;           &quot;BedTime_16&quot;           
-## [769] &quot;HrsSleep_16&quot;           &quot;FoodSit_16&quot;            &quot;FoodCash_ct&quot;          
-## [772] &quot;FoodCash2_16&quot;          &quot;FoodCash_16&quot;           &quot;WIC_16&quot;               
-## [775] &quot;CashAss_16&quot;            &quot;FoodStamp_16&quot;          &quot;MealFree_16&quot;          
-## [778] &quot;NbhdSupp_16&quot;           &quot;NbhdSafe_16&quot;           &quot;SchlSafe_16&quot;          
-## [781] &quot;SideWlks_16&quot;           &quot;park_16&quot;               &quot;RecCentr_16&quot;          
-## [784] &quot;library_16&quot;            &quot;NbhdAmenities_16&quot;      &quot;amenmissing&quot;          
-## [787] &quot;litter_16&quot;             &quot;housing_16&quot;            &quot;vandal_16&quot;            
-## [790] &quot;NbhdDetract_16&quot;        &quot;validcomm&quot;             &quot;comm_cond&quot;            
-## [793] &quot;npm6DSc_16&quot;            &quot;npm8PhAc6to11_16&quot;      &quot;npm8PhAc12to17_16&quot;    
-## [796] &quot;npm9bullied_16&quot;        &quot;npm9bully_16&quot;          &quot;npm10PrVi_16&quot;         
-## [799] &quot;npm11MHCSHCN_16&quot;       &quot;npm11MHnonCSHCN_16&quot;    &quot;npm12TransCSHCN_16&quot;   
-## [802] &quot;npm12TransNonCSHCN_16&quot; &quot;npm13bDePrev_16&quot;       &quot;npm14bSmoke_16&quot;       
-## [805] &quot;npm15AdIns_16&quot;         &quot;nom14TthDec_16&quot;        &quot;nom17_1CSHCN&quot;         
-## [808] &quot;nom17_2sysCSHCN_16&quot;    &quot;nom17_3ASD_16&quot;         &quot;nom17_4ADHD_16&quot;       
-## [811] &quot;ment3cond_16&quot;          &quot;nom18MHlth_16&quot;         &quot;nom19ChHSt_16&quot;        
-## [814] &quot;nom20obese_16&quot;         &quot;nom25ForgoneHC_16&quot;     &quot;BornUSA_16&quot;           
-## [817] &quot;LiveUSA_16&quot;            &quot;EyeDoctor_16&quot;          &quot;EyePedOffice_16&quot;      
-## [820] &quot;EyeClinic_16&quot;          &quot;EyeSchool_16&quot;          &quot;EyeOther_16&quot;          
-## [823] &quot;HowOften_16&quot;           &quot;WhatExtent_16&quot;         &quot;MomAge_16&quot;            
-## [826] &quot;SpEdEver_16&quot;           &quot;SpSerEver_16&quot;          &quot;move3more_16&quot;         
-## [829] &quot;ReferNeed_16&quot;          &quot;SchlContact_16&quot;        &quot;DentCheck_16&quot;         
-## [832] &quot;DentCleaning_16&quot;       &quot;DentInstruct_16&quot;       &quot;DentXray_16&quot;          
-## [835] &quot;flouride_16&quot;           &quot;sealant_16&quot;            &quot;HelpEachOth_16&quot;       
-## [838] &quot;WatchOut_16&quot;           &quot;GoForHelp_16&quot;          &quot;MedEm1Item_16&quot;</code></pre>
-<pre class="r"><code>colnames(X2017_2018_NSCH_Topical_DRC_Dec_2019)</code></pre>
-<pre><code>##   [1] &quot;HHID&quot;                    &quot;FIPSST&quot;                 
-##   [3] &quot;STRATUM&quot;                 &quot;FORMTYPE&quot;               
-##   [5] &quot;TOTKIDS_R&quot;               &quot;HHLANGUAGE&quot;             
-##   [7] &quot;SC_AGE_YEARS&quot;            &quot;SC_SEX&quot;                 
-##   [9] &quot;K2Q35A_1_YEARS&quot;          &quot;MOMAGE&quot;                 
-##  [11] &quot;K6Q41R_STILL&quot;            &quot;K6Q42R_NEVER&quot;           
-##  [13] &quot;K6Q43R_NEVER&quot;            &quot;K6Q13A&quot;                 
-##  [15] &quot;K6Q13B&quot;                  &quot;K6Q14A&quot;                 
-##  [17] &quot;K6Q14B&quot;                  &quot;K4Q32X01&quot;               
-##  [19] &quot;K4Q32X02&quot;                &quot;K4Q32X03&quot;               
-##  [21] &quot;K4Q32X04&quot;                &quot;K4Q32X05&quot;               
-##  [23] &quot;DENTALSERV1&quot;             &quot;DENTALSERV2&quot;            
-##  [25] &quot;DENTALSERV3&quot;             &quot;DENTALSERV4&quot;            
-##  [27] &quot;DENTALSERV5&quot;             &quot;DENTALSERV6&quot;            
-##  [29] &quot;DENTALSERV7&quot;             &quot;K4Q28X01&quot;               
-##  [31] &quot;K4Q28X02&quot;                &quot;K4Q28X03&quot;               
-##  [33] &quot;K4Q28X_EAR&quot;              &quot;K4Q28X04&quot;               
-##  [35] &quot;K4Q28X05&quot;                &quot;SESPLANYR&quot;              
-##  [37] &quot;SESPLANMO&quot;               &quot;K4Q37&quot;                  
-##  [39] &quot;SPCSERVMO&quot;               &quot;LIVEUSA_YR&quot;             
-##  [41] &quot;LIVEUSA_MO&quot;              &quot;K11Q43R&quot;                
-##  [43] &quot;A1_AGE&quot;                  &quot;A1_LIVEUSA&quot;             
-##  [45] &quot;A2_AGE&quot;                  &quot;A2_LIVEUSA&quot;             
-##  [47] &quot;HHCOUNT&quot;                 &quot;FAMCOUNT&quot;               
-##  [49] &quot;BREATHING&quot;               &quot;SWALLOWING&quot;             
-##  [51] &quot;STOMACH&quot;                 &quot;PHYSICALPAIN&quot;           
-##  [53] &quot;HANDS&quot;                   &quot;COORDINATION&quot;           
-##  [55] &quot;TOOTHACHES&quot;              &quot;GUMBLEED&quot;               
-##  [57] &quot;CAVITIES&quot;                &quot;MEMORYCOND&quot;             
-##  [59] &quot;WALKSTAIRS&quot;              &quot;DRESSING&quot;               
-##  [61] &quot;ERRANDALONE&quot;             &quot;K2Q43B&quot;                 
-##  [63] &quot;BLINDNESS&quot;               &quot;ALLERGIES&quot;              
-##  [65] &quot;ALLERGIES_CURR&quot;          &quot;ARTHRITIS&quot;              
-##  [67] &quot;ARTHRITIS_CURR&quot;          &quot;K2Q40A&quot;                 
-##  [69] &quot;K2Q40B&quot;                  &quot;K2Q46A&quot;                 
-##  [71] &quot;K2Q46B&quot;                  &quot;K2Q61A&quot;                 
-##  [73] &quot;K2Q61B&quot;                  &quot;K2Q41A&quot;                 
-##  [75] &quot;K2Q41B&quot;                  &quot;K2Q42A&quot;                 
-##  [77] &quot;K2Q42B&quot;                  &quot;HEART&quot;                  
-##  [79] &quot;HEART_CURR&quot;              &quot;HEADACHE&quot;               
-##  [81] &quot;HEADACHE_CURR&quot;           &quot;K2Q38A&quot;                 
-##  [83] &quot;K2Q38B&quot;                  &quot;K2Q33A&quot;                 
-##  [85] &quot;K2Q33B&quot;                  &quot;K2Q32A&quot;                 
-##  [87] &quot;K2Q32B&quot;                  &quot;DOWNSYN&quot;                
-##  [89] &quot;BLOOD&quot;                   &quot;CYSTFIB&quot;                
-##  [91] &quot;GENETIC&quot;                 &quot;SUBABUSE&quot;               
-##  [93] &quot;SUBABUSE_CURR&quot;           &quot;K2Q34A&quot;                 
-##  [95] &quot;K2Q34B&quot;                  &quot;K2Q36A&quot;                 
-##  [97] &quot;K2Q36B&quot;                  &quot;K2Q60A&quot;                 
-##  [99] &quot;K2Q60B&quot;                  &quot;K2Q37A&quot;                 
-## [101] &quot;K2Q37B&quot;                  &quot;K2Q30A&quot;                 
-## [103] &quot;K2Q30B&quot;                  &quot;ANYOTHER&quot;               
-## [105] &quot;ANYOTHER_CURR&quot;           &quot;K2Q35A&quot;                 
-## [107] &quot;K2Q35B&quot;                  &quot;AUTISMMED&quot;              
-## [109] &quot;AUTISMTREAT&quot;             &quot;K2Q31A&quot;                 
-## [111] &quot;K2Q31B&quot;                  &quot;K2Q31D&quot;                 
-## [113] &quot;ADDTREAT&quot;                &quot;K2Q05&quot;                  
-## [115] &quot;K6Q40&quot;                   &quot;S4Q01&quot;                  
-## [117] &quot;DOCPRIVATE&quot;              &quot;K6Q10&quot;                  
-## [119] &quot;K6Q12&quot;                   &quot;K4Q01&quot;                  
-## [121] &quot;USUALGO&quot;                 &quot;USUALSICK&quot;              
-## [123] &quot;K4Q31_R&quot;                 &quot;K4Q23&quot;                  
-## [125] &quot;ALTHEALTH&quot;               &quot;K4Q27&quot;                  
-## [127] &quot;NOTELIG&quot;                 &quot;AVAILABLE&quot;              
-## [129] &quot;APPOINTMENT&quot;             &quot;TRANSPORTCC&quot;            
-## [131] &quot;NOTOPEN&quot;                 &quot;ISSUECOST&quot;              
-## [133] &quot;K6Q15&quot;                   &quot;SESCURRSVC&quot;             
-## [135] &quot;K4Q36&quot;                   &quot;K4Q38&quot;                  
-## [137] &quot;K5Q10&quot;                   &quot;DECISIONS&quot;              
-## [139] &quot;K5Q21&quot;                   &quot;TREATCHILD&quot;             
-## [141] &quot;TREATADULT&quot;              &quot;WRITEPLAN&quot;              
-## [143] &quot;RECEIVECOPY&quot;             &quot;HEALTHKNOW&quot;             
-## [145] &quot;KEEPINSADULT&quot;            &quot;K12Q01_A&quot;               
-## [147] &quot;K12Q01_B&quot;                &quot;K12Q01_C&quot;               
-## [149] &quot;K12Q01_D&quot;                &quot;K12Q01_E&quot;               
-## [151] &quot;K12Q01_F&quot;                &quot;K12Q01_G&quot;               
-## [153] &quot;CURRCOV&quot;                 &quot;K12Q03&quot;                 
-## [155] &quot;K12Q04&quot;                  &quot;K12Q12&quot;                 
-## [157] &quot;TRICARE&quot;                 &quot;K11Q03R&quot;                
-## [159] &quot;HCCOVOTH&quot;                &quot;K3Q25&quot;                  
-## [161] &quot;STOPWORK&quot;                &quot;CUTHOURS&quot;               
-## [163] &quot;AVOIDCHG&quot;                &quot;RHYMEWORD&quot;              
-## [165] &quot;REPEATED&quot;                &quot;K7Q30&quot;                  
-## [167] &quot;K7Q31&quot;                   &quot;K7Q32&quot;                  
-## [169] &quot;K7Q37&quot;                   &quot;K7Q38&quot;                  
-## [171] &quot;BORNUSA&quot;                 &quot;K8Q35&quot;                  
-## [173] &quot;EMOSUPSPO&quot;               &quot;EMOSUPFAM&quot;              
-## [175] &quot;EMOSUPHCP&quot;               &quot;EMOSUPWOR&quot;              
-## [177] &quot;EMOSUPADV&quot;               &quot;EMOSUPPEER&quot;             
-## [179] &quot;EMOSUPMHP&quot;               &quot;EMOSUPOTH&quot;              
-## [181] &quot;K6Q20&quot;                   &quot;K6Q27&quot;                  
-## [183] &quot;K9Q40&quot;                   &quot;K9Q41&quot;                  
-## [185] &quot;MOLD&quot;                    &quot;K11Q60&quot;                 
-## [187] &quot;K11Q61&quot;                  &quot;K11Q62&quot;                 
-## [189] &quot;S9Q34&quot;                   &quot;K10Q11&quot;                 
-## [191] &quot;K10Q12&quot;                  &quot;K10Q13&quot;                 
-## [193] &quot;K10Q14&quot;                  &quot;K10Q20&quot;                 
-## [195] &quot;K10Q22&quot;                  &quot;K10Q23&quot;                 
-## [197] &quot;K9Q96&quot;                   &quot;ACE3&quot;                   
-## [199] &quot;ACE4&quot;                    &quot;ACE5&quot;                   
-## [201] &quot;ACE6&quot;                    &quot;ACE7&quot;                   
-## [203] &quot;ACE8&quot;                    &quot;ACE9&quot;                   
-## [205] &quot;ACE10&quot;                   &quot;A1_K11Q50_R&quot;            
-## [207] &quot;A1_DEPLSTAT&quot;             &quot;A2_K11Q50_R&quot;            
-## [209] &quot;A2_DEPLSTAT&quot;             &quot;K2Q01&quot;                  
-## [211] &quot;K2Q01_D&quot;                 &quot;K6Q70_R&quot;                
-## [213] &quot;K6Q73_R&quot;                 &quot;K6Q71_R&quot;                
-## [215] &quot;K6Q72_R&quot;                 &quot;K7Q84_R&quot;                
-## [217] &quot;K7Q85_R&quot;                 &quot;K7Q82_R&quot;                
-## [219] &quot;K7Q83_R&quot;                 &quot;K7Q70_R&quot;                
-## [221] &quot;K5Q40&quot;                   &quot;K5Q41&quot;                  
-## [223] &quot;K5Q42&quot;                   &quot;K5Q43&quot;                  
-## [225] &quot;K5Q44&quot;                   &quot;DISCUSSOPT&quot;             
-## [227] &quot;RAISECONC&quot;               &quot;BESTFORCHILD&quot;           
-## [229] &quot;K3Q20&quot;                   &quot;K3Q22&quot;                  
-## [231] &quot;K3Q21B&quot;                  &quot;ALLERGIES_DESC&quot;         
-## [233] &quot;ARTHRITIS_DESC&quot;          &quot;K2Q40C&quot;                 
-## [235] &quot;K2Q46C&quot;                  &quot;CERPALS_DESC&quot;           
-## [237] &quot;K2Q41C&quot;                  &quot;K2Q42C&quot;                 
-## [239] &quot;HEART_DESC&quot;              &quot;HEADACHE_DESC&quot;          
-## [241] &quot;K2Q38C&quot;                  &quot;K2Q33C&quot;                 
-## [243] &quot;K2Q32C&quot;                  &quot;K2Q34C&quot;                 
-## [245] &quot;K2Q36C&quot;                  &quot;K2Q60C&quot;                 
-## [247] &quot;K2Q37C&quot;                  &quot;K2Q30C&quot;                 
-## [249] &quot;ANYOTHER_DESC&quot;           &quot;K2Q35C&quot;                 
-## [251] &quot;K2Q31C&quot;                  &quot;RECOGBEGIN&quot;             
-## [253] &quot;CLEAREXP&quot;                &quot;WRITENAME&quot;              
-## [255] &quot;RECSHAPES&quot;               &quot;DISTRACTED&quot;             
-## [257] &quot;WORKTOFIN&quot;               &quot;SIMPLEINST&quot;             
-## [259] &quot;PLAYWELL&quot;                &quot;NEWACTIVITY&quot;            
-## [261] &quot;HURTSAD&quot;                 &quot;CALMDOWN&quot;               
-## [263] &quot;TEMPER&quot;                  &quot;SITSTILL&quot;               
-## [265] &quot;RECOGABC&quot;                &quot;TALKABOUT&quot;              
-## [267] &quot;WKTOSOLVE&quot;               &quot;STRENGTHS&quot;              
-## [269] &quot;HOPEFUL&quot;                 &quot;A1_PHYSHEALTH&quot;          
-## [271] &quot;A1_MENTHEALTH&quot;           &quot;A2_PHYSHEALTH&quot;          
-## [273] &quot;A2_MENTHEALTH&quot;           &quot;K10Q30&quot;                 
-## [275] &quot;K10Q31&quot;                  &quot;K10Q40_R&quot;               
-## [277] &quot;GOFORHELP&quot;               &quot;K10Q41_R&quot;               
-## [279] &quot;K8Q31&quot;                   &quot;K8Q32&quot;                  
-## [281] &quot;K8Q34&quot;                   &quot;A1_RELATION&quot;            
-## [283] &quot;A1_SEX&quot;                  &quot;A1_BORN&quot;                
-## [285] &quot;A1_GRADE&quot;                &quot;A1_MARITAL&quot;             
-## [287] &quot;A2_RELATION&quot;             &quot;A2_SEX&quot;                 
-## [289] &quot;A2_BORN&quot;                 &quot;A2_GRADE&quot;               
-## [291] &quot;A2_MARITAL&quot;              &quot;A1_ACTIVE&quot;              
-## [293] &quot;A2_ACTIVE&quot;               &quot;HOWMUCH&quot;                
-## [295] &quot;ATHOMEHC&quot;                &quot;ARRANGEHC&quot;              
-## [297] &quot;K7Q02R_R&quot;                &quot;K7Q04R_R&quot;               
-## [299] &quot;PHYSACTIV&quot;               &quot;HOURSLEEP05&quot;            
-## [301] &quot;HOURSLEEP&quot;               &quot;K6Q60_R&quot;                
-## [303] &quot;K6Q61_R&quot;                 &quot;K8Q11&quot;                  
-## [305] &quot;FOODSIT&quot;                 &quot;PESTICIDE&quot;              
-## [307] &quot;POSCHOICE&quot;               &quot;GAINSKILLS&quot;             
-## [309] &quot;CHANGEAGE&quot;               &quot;K2Q35D&quot;                 
-## [311] &quot;HCABILITY&quot;               &quot;HCEXTENT&quot;               
-## [313] &quot;K4Q20R&quot;                  &quot;DOCROOM&quot;                
-## [315] &quot;WGTCONC&quot;                 &quot;K4Q02_R&quot;                
-## [317] &quot;DENTISTVISIT&quot;            &quot;K4Q22_R&quot;                
-## [319] &quot;TREATNEED&quot;               &quot;K4Q24_R&quot;                
-## [321] &quot;K4Q26&quot;                   &quot;C4Q04&quot;                  
-## [323] &quot;HOSPITALER&quot;              &quot;K4Q04_R&quot;                
-## [325] &quot;K5Q11&quot;                   &quot;K5Q20_R&quot;                
-## [327] &quot;K5Q22&quot;                   &quot;K5Q30&quot;                  
-## [329] &quot;K5Q32&quot;                   &quot;K5Q31_R&quot;                
-## [331] &quot;K8Q21&quot;                   &quot;K8Q30&quot;                  
-## [333] &quot;COUNTTO&quot;                 &quot;K7Q33&quot;                  
-## [335] &quot;BEDTIME&quot;                 &quot;K3Q04_R&quot;                
-## [337] &quot;K6Q08_R&quot;                 &quot;CONFIDENT&quot;              
-## [339] &quot;ACE1&quot;                    &quot;USEPENCIL&quot;              
-## [341] &quot;MAKEFRIEND&quot;              &quot;SLEEPPOS&quot;               
-## [343] &quot;COLOR&quot;                   &quot;K4Q30_R&quot;                
-## [345] &quot;STARTSCHOOL&quot;             &quot;MENBEVCOV&quot;              
-## [347] &quot;YEAR&quot;                    &quot;CBSAFP_YN&quot;              
-## [349] &quot;METRO_YN&quot;                &quot;MPC_YN&quot;                 
-## [351] &quot;TOTAGE_0_5&quot;              &quot;TOTAGE_6_11&quot;            
-## [353] &quot;TOTAGE_12_17&quot;            &quot;TOTCSHCN&quot;               
-## [355] &quot;TOTNONSHCN&quot;              &quot;SC_RACE_R&quot;              
-## [357] &quot;SC_HISPANIC_R&quot;           &quot;SC_CSHCN&quot;               
-## [359] &quot;SC_K2Q10&quot;                &quot;SC_K2Q11&quot;               
-## [361] &quot;SC_K2Q12&quot;                &quot;SC_K2Q13&quot;               
-## [363] &quot;SC_K2Q14&quot;                &quot;SC_K2Q15&quot;               
-## [365] &quot;SC_K2Q16&quot;                &quot;SC_K2Q17&quot;               
-## [367] &quot;SC_K2Q18&quot;                &quot;SC_K2Q19&quot;               
-## [369] &quot;SC_K2Q20&quot;                &quot;SC_K2Q21&quot;               
-## [371] &quot;SC_K2Q22&quot;                &quot;SC_K2Q23&quot;               
-## [373] &quot;SC_AGE_LT4&quot;              &quot;SC_AGE_LT6&quot;             
-## [375] &quot;SC_AGE_LT9&quot;              &quot;SC_AGE_LT10&quot;            
-## [377] &quot;AGEPOS4&quot;                 &quot;TOTMALE&quot;                
-## [379] &quot;TOTFEMALE&quot;               &quot;SC_RACE_R_IF&quot;           
-## [381] &quot;SC_RACER&quot;                &quot;SC_RACEASIA&quot;            
-## [383] &quot;SC_RACEAIAN&quot;             &quot;SC_HISPANIC_R_IF&quot;       
-## [385] &quot;SC_SEX_IF&quot;               &quot;BIRTHWT_OZ_S&quot;           
-## [387] &quot;BREASTFEDEND_DAY_S&quot;      &quot;BREASTFEDEND_WK_S&quot;      
-## [389] &quot;BREASTFEDEND_MO_S&quot;       &quot;FRSTFORMULA_DAY_S&quot;      
-## [391] &quot;FRSTFORMULA_WK_S&quot;        &quot;FRSTFORMULA_MO_S&quot;       
-## [393] &quot;FRSTSOLIDS_DAY_S&quot;        &quot;FRSTSOLIDS_WK_S&quot;        
-## [395] &quot;FRSTSOLIDS_MO_S&quot;         &quot;HOUSE_GEN&quot;              
-## [397] &quot;FAMILY_R&quot;                &quot;CURRINS&quot;                
-## [399] &quot;INSGAP&quot;                  &quot;INSTYPE&quot;                
-## [401] &quot;HIGRADE&quot;                 &quot;HIGRADE_TVIS&quot;           
-## [403] &quot;BIRTHWT_VL&quot;              &quot;BIRTHWT_L&quot;              
-## [405] &quot;BIRTHWT&quot;                 &quot;FPL_IF&quot;                 
-## [407] &quot;A1_GRADE_IF&quot;             &quot;BMICLASS&quot;               
-## [409] &quot;HHCOUNT_IF&quot;              &quot;FPL_I1&quot;                 
-## [411] &quot;FPL_I2&quot;                  &quot;FPL_I3&quot;                 
-## [413] &quot;FPL_I4&quot;                  &quot;FPL_I5&quot;                 
-## [415] &quot;FPL_I6&quot;                  &quot;FWC_1718&quot;               
-## [417] &quot;hrsareg&quot;                 &quot;age3_1718&quot;              
-## [419] &quot;age5_1718&quot;               &quot;sex_1718&quot;               
-## [421] &quot;hispanic_1718&quot;           &quot;race4_1718&quot;             
-## [423] &quot;raceASIA_1718&quot;           &quot;race7_1718&quot;             
-## [425] &quot;PrntNativity_1718&quot;       &quot;HHLanguage_1718&quot;        
-## [427] &quot;hisplang_1718&quot;           &quot;famstruct5_1718&quot;        
-## [429] &quot;povlev4_1718&quot;            &quot;povSCHIP_1718&quot;          
-## [431] &quot;AdultEduc_1718&quot;          &quot;BornUSA_1718&quot;           
-## [433] &quot;MilitarySt_1718&quot;         &quot;ChHlthSt_1718&quot;          
-## [435] &quot;FamCount_1718&quot;           &quot;TeethCond_1718&quot;         
-## [437] &quot;toothache_1718&quot;          &quot;gumbleed_1718&quot;          
-## [439] &quot;cavities_1718&quot;           &quot;ctOralProb_1718&quot;        
-## [441] &quot;OralProb_1718&quot;           &quot;BrstEver_1718&quot;          
-## [443] &quot;ExBrstFd_1718&quot;           &quot;BMI4_1718&quot;              
-## [445] &quot;BMI3_1718&quot;               &quot;PhysAct_1718&quot;           
-## [447] &quot;WgtConcn_1718&quot;           &quot;LowBWght_1718&quot;          
-## [449] &quot;VeryLBWght_1718&quot;         &quot;BornPre_1718&quot;           
-## [451] &quot;allergies_1718&quot;          &quot;arthritis_1718&quot;         
-## [453] &quot;asthma_1718&quot;             &quot;BrainInj_1718&quot;          
-## [455] &quot;palsy_1718&quot;              &quot;diabetes_1718&quot;          
-## [457] &quot;seizure_1718&quot;            &quot;heart_1718&quot;             
-## [459] &quot;headache_1718&quot;           &quot;tourette_1718&quot;          
-## [461] &quot;anxiety_1718&quot;            &quot;depress_1718&quot;           
-## [463] &quot;behavior_1718&quot;           &quot;DevDelay_1718&quot;          
-## [465] &quot;IntDisab_1718&quot;           &quot;speech_1718&quot;            
-## [467] &quot;learning_1718&quot;           &quot;OthrMent_1718&quot;          
-## [469] &quot;autism_1718&quot;             &quot;ADHD_1718&quot;              
-## [471] &quot;SubUse_1718&quot;             &quot;hearing_1718&quot;           
-## [473] &quot;vision_1718&quot;             &quot;CondCnt27_1718&quot;         
-## [475] &quot;Cond2more27_1718&quot;        &quot;AllerSev_1718&quot;          
-## [477] &quot;ArthrSev_1718&quot;           &quot;AsthmSev_1718&quot;          
-## [479] &quot;BrainSev_1718&quot;           &quot;PalsySev_1718&quot;          
-## [481] &quot;DiabetSev_1718&quot;          &quot;SeizSev_1718&quot;           
-## [483] &quot;HeartSev_1718&quot;           &quot;HeadSev_1718&quot;           
-## [485] &quot;TouretSev_1718&quot;          &quot;AnxietSev_1718&quot;         
-## [487] &quot;DepresSev_1718&quot;          &quot;BehavSev_1718&quot;          
-## [489] &quot;DevDelSev_1718&quot;          &quot;IntDisSev_1718&quot;         
-## [491] &quot;SpeechSev_1718&quot;          &quot;LearnSev_1718&quot;          
-## [493] &quot;OthMHSev_1718&quot;           &quot;AutismSev_1718&quot;         
-## [495] &quot;ADHDSev_1718&quot;            &quot;DiffBreath_1718&quot;        
-## [497] &quot;DiffSwall_1718&quot;          &quot;DiffDigest_1718&quot;        
-## [499] &quot;DiffPain_1718&quot;           &quot;DiffHands_1718&quot;         
-## [501] &quot;DiffCoor_1718&quot;           &quot;DiffMem_1718&quot;           
-## [503] &quot;DiffWalk_1718&quot;           &quot;DiffDress_1718&quot;         
-## [505] &quot;DiffErrand_1718&quot;         &quot;cntdiff&quot;                
-## [507] &quot;Diff2more_1718&quot;          &quot;rxmeds_1718&quot;            
-## [509] &quot;serve_1718&quot;              &quot;func_1718&quot;              
-## [511] &quot;therapy_1718&quot;            &quot;mhealth_1718&quot;           
-## [513] &quot;qualnum_1718&quot;            &quot;CSHCN_1718&quot;             
-## [515] &quot;CSHCNtype_1718&quot;          &quot;CSHCNComplex_1718&quot;      
-## [517] &quot;mhneeds_1718&quot;            &quot;qualnum4_1718&quot;          
-## [519] &quot;DailyAct_1718&quot;           &quot;MakeFriend_1718&quot;        
-## [521] &quot;ADHDind_1718&quot;            &quot;ADHDSevInd_1718&quot;        
-## [523] &quot;ADHDMed_1718&quot;            &quot;ADHDBehTreat_1718&quot;      
-## [525] &quot;AutismInd_1718&quot;          &quot;ASDSevInd_1718&quot;         
-## [527] &quot;ASDMed_1718&quot;             &quot;ASDBehTreat_1718&quot;       
-## [529] &quot;ASDAge_1718&quot;             &quot;ASDDrType_1718&quot;         
-## [531] &quot;MedEmotion_1718&quot;         &quot;MEDB10ScrQ5_1718&quot;       
-## [533] &quot;CurrIns_1718&quot;            &quot;InsGap_1718&quot;            
-## [535] &quot;NoCovEmp_1718&quot;           &quot;NoCovOverdue_1718&quot;      
-## [537] &quot;NoCovUnafford_1718&quot;      &quot;NoCovBenInadeq_1718&quot;    
-## [539] &quot;NoCovProvInadeq_1718&quot;    &quot;NoCovRenew_1718&quot;        
-## [541] &quot;InsType_1718&quot;            &quot;benefits_1718&quot;          
-## [543] &quot;allows_1718&quot;             &quot;expense_1718&quot;           
-## [545] &quot;InsAdeq_1718&quot;            &quot;insurance_1718&quot;         
-## [547] &quot;InsMentH_1718&quot;           &quot;OutOfPckt_1718&quot;         
-## [549] &quot;VisitTime_1718&quot;          &quot;PrivateTalk_1718&quot;       
-## [551] &quot;DentCare_1718&quot;           &quot;PrevDent_1718&quot;          
-## [553] &quot;DentCheck_1718&quot;          &quot;DentCleaning_1718&quot;      
-## [555] &quot;DentInstruct_1718&quot;       &quot;DentXray_1718&quot;          
-## [557] &quot;fluoride_1718&quot;           &quot;sealant_1718&quot;           
-## [559] &quot;MentHCare_1718&quot;          &quot;SpecCare_1718&quot;          
-## [561] &quot;ERVisit_1718&quot;            &quot;AlterHC_1718&quot;           
-## [563] &quot;DrAskConc_1718&quot;          &quot;both_9to23&quot;             
-## [565] &quot;both_24to35&quot;             &quot;DevScrnng_1718&quot;         
-## [567] &quot;SpecServ_1718&quot;           &quot;SpSerAge_1718&quot;          
-## [569] &quot;PerDrNs_1718&quot;            &quot;UsualSck_1718&quot;          
-## [571] &quot;time_1718&quot;               &quot;listen_1718&quot;            
-## [573] &quot;sensitiv_1718&quot;           &quot;info_1718&quot;              
-## [575] &quot;partner_1718&quot;            &quot;famcentitems_1718&quot;      
-## [577] &quot;FamCent_1718&quot;            &quot;DrComm_1718&quot;            
-## [579] &quot;CareHelp_1718&quot;           &quot;OthComm_1718&quot;           
-## [581] &quot;CareCoor_1718&quot;           &quot;MedHome_1718&quot;           
-## [583] &quot;HelpCoord_1718&quot;          &quot;ExtraHelp_1718&quot;         
-## [585] &quot;AllExtraHelp_1718&quot;       &quot;OtherComm_1718&quot;         
-## [587] &quot;SatOthComm_1718&quot;         &quot;DrCommR_1718&quot;           
-## [589] &quot;DiscussOpt_1718&quot;         &quot;RaiseConc_1718&quot;         
-## [591] &quot;BestChoice_1718&quot;         &quot;ShareDec_1718&quot;          
-## [593] &quot;TimeAlone_1718&quot;          &quot;ActiveWork_1718&quot;        
-## [595] &quot;TrtChild_1718&quot;           &quot;TrtAdult_1718&quot;          
-## [597] &quot;Transition_1718&quot;         &quot;ChngeAge_1718&quot;          
-## [599] &quot;GainSkill_1718&quot;          &quot;PosChoice_1718&quot;         
-## [601] &quot;InsNeeds_1718&quot;           &quot;sys0to11care2_1718&quot;     
-## [603] &quot;sys12to17care2_1718&quot;     &quot;SystCare2_1718&quot;         
-## [605] &quot;ForgoneCare_1718&quot;        &quot;ForgoneMed_1718&quot;        
-## [607] &quot;ForgoneDent_1718&quot;        &quot;ForgoneVis_1718&quot;        
-## [609] &quot;ForgoneHear_1718&quot;        &quot;ForgoneMH_1718&quot;         
-## [611] &quot;ineligible_1718&quot;         &quot;unavailable_1718&quot;       
-## [613] &quot;appointment_1718&quot;        &quot;transport_1718&quot;         
-## [615] &quot;NotOpen_1718&quot;            &quot;CostIssue_1718&quot;         
-## [617] &quot;MedBills_1718&quot;           &quot;frustrated_1718&quot;        
-## [619] &quot;SpEducPln_1718&quot;          &quot;SpEdAge_1718&quot;           
-## [621] &quot;ReptGrade_1718&quot;          &quot;SchlMiss_1718&quot;          
-## [623] &quot;sports_1718&quot;             &quot;clubs_1718&quot;             
-## [625] &quot;lessons_1718&quot;            &quot;partic_1718&quot;            
-## [627] &quot;AftSchAct_1718&quot;          &quot;EventPart_1718&quot;         
-## [629] &quot;volunteer_1718&quot;          &quot;mentor_1718&quot;            
-## [631] &quot;LearnThings_1718&quot;        &quot;confident_1718&quot;         
-## [633] &quot;RecogBegin_1718&quot;         &quot;RecogLetter_1718&quot;       
-## [635] &quot;RhymeWord_1718&quot;          &quot;ClearExp_1718&quot;          
-## [637] &quot;WriteName_1718&quot;          &quot;CountTo_1718&quot;           
-## [639] &quot;RecogShapes_1718&quot;        &quot;distracted_1718&quot;        
-## [641] &quot;WorkToFin_1718&quot;          &quot;SimpleInst_1718&quot;        
-## [643] &quot;UsePencil_1718&quot;          &quot;PlayWell_1718&quot;          
-## [645] &quot;NewActivity_1718&quot;        &quot;HurtSad_1718&quot;           
-## [647] &quot;CalmDown_1718&quot;           &quot;temper_1718&quot;            
-## [649] &quot;MakeFr3to5_1718&quot;         &quot;SitStill1_1718&quot;         
-## [651] &quot;color_1718&quot;              &quot;MothPhyH_1718&quot;          
-## [653] &quot;FathPhyH_1718&quot;           &quot;MotherMH_1718&quot;          
-## [655] &quot;FatherMH_1718&quot;           &quot;MotherHSt_1718&quot;         
-## [657] &quot;FatherHSt_1718&quot;          &quot;smoking_1718&quot;           
-## [659] &quot;SmkInside_1718&quot;          &quot;WrkngPoor_1718&quot;         
-## [661] &quot;ShareIdeas_1718&quot;         &quot;readto_1718&quot;            
-## [663] &quot;SingStory_1718&quot;          &quot;MealTogether_1718&quot;      
-## [665] &quot;TalkAbout_1718&quot;          &quot;WrkToSolve_1718&quot;        
-## [667] &quot;strengths_1718&quot;          &quot;hopeful_1718&quot;           
-## [669] &quot;CtFamRes_1718&quot;           &quot;FamResilience_1718&quot;     
-## [671] &quot;FamResilience2_1718&quot;     &quot;ACEdivorce_1718&quot;        
-## [673] &quot;ACEdeath_1718&quot;           &quot;ACEjail_1718&quot;           
-## [675] &quot;ACEdomviol_1718&quot;         &quot;ACEneighviol_1718&quot;      
-## [677] &quot;ACEmhealth_1718&quot;         &quot;ACEdrug_1718&quot;           
-## [679] &quot;ACEdiscrim_1718&quot;         &quot;ACEct_1718&quot;             
-## [681] &quot;ACE2more_1718&quot;           &quot;DiffCare_1718&quot;          
-## [683] &quot;bother_1718&quot;             &quot;angry_1718&quot;             
-## [685] &quot;ParAgg_ct&quot;               &quot;ParAggrav_1718&quot;         
-## [687] &quot;EmSupport_1718&quot;          &quot;EmSSpouse_1718&quot;         
-## [689] &quot;EmSFamily_1718&quot;          &quot;EmSProvider_1718&quot;       
-## [691] &quot;EmSWorship_1718&quot;         &quot;EmSSupGrp_1718&quot;         
-## [693] &quot;EmSPeer_1718&quot;            &quot;EmSMental_1718&quot;         
-## [695] &quot;ParCoping_1718&quot;          &quot;JobChange_1718&quot;         
-## [697] &quot;StopCutWork_1718&quot;        &quot;StopWork_1718&quot;          
-## [699] &quot;CutHours_1718&quot;           &quot;AvoidChng_1718&quot;         
-## [701] &quot;HomeCare_1718&quot;           &quot;TimeCoord_1718&quot;         
-## [703] &quot;Care10hrs_1718&quot;          &quot;SleepPos_1718&quot;          
-## [705] &quot;BedTime_1718&quot;            &quot;HrsSleep_1718&quot;          
-## [707] &quot;FoodSit_1718&quot;            &quot;FoodCash_ct&quot;            
-## [709] &quot;FoodCash2_1718&quot;          &quot;FoodCash_1718&quot;          
-## [711] &quot;WIC_1718&quot;                &quot;CashAss_1718&quot;           
-## [713] &quot;FoodStamp_1718&quot;          &quot;MealFree_1718&quot;          
-## [715] &quot;NbhdSupp_1718&quot;           &quot;NbhdSafe_1718&quot;          
-## [717] &quot;SchlSafe_1718&quot;           &quot;SideWlks_1718&quot;          
-## [719] &quot;park_1718&quot;               &quot;RecCentr_1718&quot;          
-## [721] &quot;library_1718&quot;            &quot;NbhdAmenities_1718&quot;     
-## [723] &quot;litter_1718&quot;             &quot;housing_1718&quot;           
-## [725] &quot;vandal_1718&quot;             &quot;NbhdDetract_1718&quot;       
-## [727] &quot;npm6DSc_1718&quot;            &quot;npm8PhAc6to11_1718&quot;     
-## [729] &quot;npm8PhAc12to17_1718&quot;     &quot;npm11MHCSHCN_1718&quot;      
-## [731] &quot;npm11MHnonCSHCN_1718&quot;    &quot;npm12TransCSHCN_1718&quot;   
-## [733] &quot;npm12TransNonCSHCN_1718&quot; &quot;npm13_2DePrev_1718&quot;     
-## [735] &quot;npm14_2Smoke_1718&quot;       &quot;npm15AdIns_1718&quot;        
-## [737] &quot;nom14TthDec_1718&quot;        &quot;nom17_1CSHCN_1718&quot;      
-## [739] &quot;nom17_2sysCSHCN_1718&quot;    &quot;nom17_3ASD_1718&quot;        
-## [741] &quot;nom17_4ADHD_1718&quot;        &quot;nom18MHlth_1718&quot;        
-## [743] &quot;nom19ChHSt_1718&quot;         &quot;nom20obese_1718&quot;        
-## [745] &quot;nom25ForgoneHC_1718&quot;</code></pre>
-<pre class="r"><code>colnames(X2019_2020_NSCH_Topical_CAHMI_DRC)</code></pre>
-<pre><code>##   [1] &quot;FIPSST&quot;                  &quot;STRATUM&quot;                
-##   [3] &quot;HHID&quot;                    &quot;FORMTYPE&quot;               
-##   [5] &quot;TOTKIDS_R&quot;               &quot;TENURE&quot;                 
-##   [7] &quot;HHLANGUAGE&quot;              &quot;SC_AGE_YEARS&quot;           
-##   [9] &quot;SC_SEX&quot;                  &quot;K2Q35A_1_YEARS&quot;         
-##  [11] &quot;BIRTH_MO&quot;                &quot;BIRTH_YR&quot;               
-##  [13] &quot;MOMAGE&quot;                  &quot;K6Q41R_STILL&quot;           
-##  [15] &quot;K6Q42R_NEVER&quot;            &quot;K6Q43R_NEVER&quot;           
-##  [17] &quot;K6Q13A&quot;                  &quot;K6Q13B&quot;                 
-##  [19] &quot;K6Q14A&quot;                  &quot;K6Q14B&quot;                 
-##  [21] &quot;K4Q32X01&quot;                &quot;K4Q32X02&quot;               
-##  [23] &quot;K4Q32X03&quot;                &quot;K4Q32X04&quot;               
-##  [25] &quot;K4Q32X05&quot;                &quot;DENTALSERV1&quot;            
-##  [27] &quot;DENTALSERV2&quot;             &quot;DENTALSERV3&quot;            
-##  [29] &quot;DENTALSERV4&quot;             &quot;DENTALSERV5&quot;            
-##  [31] &quot;DENTALSERV6&quot;             &quot;DENTALSERV7&quot;            
-##  [33] &quot;K4Q28X01&quot;                &quot;K4Q28X02&quot;               
-##  [35] &quot;K4Q28X03&quot;                &quot;K4Q28X_EAR&quot;             
-##  [37] &quot;K4Q28X04&quot;                &quot;K4Q28X05&quot;               
-##  [39] &quot;SESPLANYR&quot;               &quot;SESPLANMO&quot;              
-##  [41] &quot;K4Q37&quot;                   &quot;SPCSERVMO&quot;              
-##  [43] &quot;LIVEUSA_YR&quot;              &quot;LIVEUSA_MO&quot;             
-##  [45] &quot;K11Q43R&quot;                 &quot;A1_AGE&quot;                 
-##  [47] &quot;A1_LIVEUSA&quot;              &quot;A2_AGE&quot;                 
-##  [49] &quot;A2_LIVEUSA&quot;              &quot;HHCOUNT&quot;                
-##  [51] &quot;FAMCOUNT&quot;                &quot;BREATHING&quot;              
-##  [53] &quot;SWALLOWING&quot;              &quot;STOMACH&quot;                
-##  [55] &quot;PHYSICALPAIN&quot;            &quot;HANDS&quot;                  
-##  [57] &quot;COORDINATION&quot;            &quot;TOOTHACHES&quot;             
-##  [59] &quot;GUMBLEED&quot;                &quot;CAVITIES&quot;               
-##  [61] &quot;MEMORYCOND&quot;              &quot;WALKSTAIRS&quot;             
-##  [63] &quot;DRESSING&quot;                &quot;ERRANDALONE&quot;            
-##  [65] &quot;K2Q43B&quot;                  &quot;BLINDNESS&quot;              
-##  [67] &quot;ALLERGIES&quot;               &quot;ALLERGIES_CURR&quot;         
-##  [69] &quot;ARTHRITIS&quot;               &quot;ARTHRITIS_CURR&quot;         
-##  [71] &quot;K2Q40A&quot;                  &quot;K2Q40B&quot;                 
-##  [73] &quot;K2Q61A&quot;                  &quot;K2Q61B&quot;                 
-##  [75] &quot;K2Q41A&quot;                  &quot;K2Q41B&quot;                 
-##  [77] &quot;K2Q42A&quot;                  &quot;K2Q42B&quot;                 
-##  [79] &quot;HEART&quot;                   &quot;HEART_CURR&quot;             
-##  [81] &quot;HEADACHE&quot;                &quot;HEADACHE_CURR&quot;          
-##  [83] &quot;K2Q38A&quot;                  &quot;K2Q38B&quot;                 
-##  [85] &quot;K2Q33A&quot;                  &quot;K2Q33B&quot;                 
-##  [87] &quot;K2Q32A&quot;                  &quot;K2Q32B&quot;                 
-##  [89] &quot;DOWNSYN&quot;                 &quot;BLOOD&quot;                  
-##  [91] &quot;BLOOD_SCREEN&quot;            &quot;CYSTFIB&quot;                
-##  [93] &quot;GENETIC&quot;                 &quot;GENETIC_SCREEN&quot;         
-##  [95] &quot;K2Q34A&quot;                  &quot;K2Q34B&quot;                 
-##  [97] &quot;K2Q36A&quot;                  &quot;K2Q36B&quot;                 
-##  [99] &quot;K2Q60A&quot;                  &quot;K2Q60B&quot;                 
-## [101] &quot;K2Q37A&quot;                  &quot;K2Q37B&quot;                 
-## [103] &quot;K2Q30A&quot;                  &quot;K2Q30B&quot;                 
-## [105] &quot;K2Q35A&quot;                  &quot;K2Q35B&quot;                 
-## [107] &quot;AUTISMMED&quot;               &quot;AUTISMTREAT&quot;            
-## [109] &quot;K2Q31A&quot;                  &quot;K2Q31B&quot;                 
-## [111] &quot;K2Q31D&quot;                  &quot;ADDTREAT&quot;               
-## [113] &quot;K2Q05&quot;                   &quot;K6Q40&quot;                  
-## [115] &quot;S4Q01&quot;                   &quot;DOCPRIVATE&quot;             
-## [117] &quot;OVERWEIGHT&quot;              &quot;K6Q10&quot;                  
-## [119] &quot;K6Q12&quot;                   &quot;K4Q01&quot;                  
-## [121] &quot;USUALGO&quot;                 &quot;USUALSICK&quot;              
-## [123] &quot;K4Q31_R&quot;                 &quot;K4Q23&quot;                  
-## [125] &quot;ALTHEALTH&quot;               &quot;K4Q27&quot;                  
-## [127] &quot;NOTELIG&quot;                 &quot;AVAILABLE&quot;              
-## [129] &quot;APPOINTMENT&quot;             &quot;TRANSPORTCC&quot;            
-## [131] &quot;NOTOPEN&quot;                 &quot;ISSUECOST&quot;              
-## [133] &quot;HOSPITALSTAY&quot;            &quot;K6Q15&quot;                  
-## [135] &quot;SESCURRSVC&quot;              &quot;K4Q36&quot;                  
-## [137] &quot;K4Q38&quot;                   &quot;K5Q10&quot;                  
-## [139] &quot;DECISIONS&quot;               &quot;K5Q21&quot;                  
-## [141] &quot;TREATCHILD&quot;              &quot;TREATADULT&quot;             
-## [143] &quot;MEDHISTORY&quot;              &quot;WRITEPLAN&quot;              
-## [145] &quot;RECEIVECOPY&quot;             &quot;HEALTHKNOW&quot;             
-## [147] &quot;KEEPINSADULT&quot;            &quot;K12Q01_A&quot;               
-## [149] &quot;K12Q01_B&quot;                &quot;K12Q01_C&quot;               
-## [151] &quot;K12Q01_D&quot;                &quot;K12Q01_E&quot;               
-## [153] &quot;K12Q01_F&quot;                &quot;K12Q01_G&quot;               
-## [155] &quot;CURRCOV&quot;                 &quot;K12Q03&quot;                 
-## [157] &quot;K12Q04&quot;                  &quot;K12Q12&quot;                 
-## [159] &quot;TRICARE&quot;                 &quot;K11Q03R&quot;                
-## [161] &quot;HCCOVOTH&quot;                &quot;K3Q25&quot;                  
-## [163] &quot;STOPWORK&quot;                &quot;CUTHOURS&quot;               
-## [165] &quot;AVOIDCHG&quot;                &quot;ONEWORD&quot;                
-## [167] &quot;TWOWORDS&quot;                &quot;THREEWORDS&quot;             
-## [169] &quot;ASKQUESTION&quot;             &quot;ASKQUESTION2&quot;           
-## [171] &quot;TELLSTORY&quot;               &quot;UNDERSTAND&quot;             
-## [173] &quot;DIRECTIONS&quot;              &quot;POINT&quot;                  
-## [175] &quot;DIRECTIONS2&quot;             &quot;UNDERSTAND2&quot;            
-## [177] &quot;RHYMEWORD&quot;               &quot;REPEATED&quot;               
-## [179] &quot;K7Q30&quot;                   &quot;K7Q31&quot;                  
-## [181] &quot;K7Q32&quot;                   &quot;K7Q37&quot;                  
-## [183] &quot;K7Q38&quot;                   &quot;BORNUSA&quot;                
-## [185] &quot;K8Q35&quot;                   &quot;EMOSUPSPO&quot;              
-## [187] &quot;EMOSUPFAM&quot;               &quot;EMOSUPHCP&quot;              
-## [189] &quot;EMOSUPWOR&quot;               &quot;EMOSUPADV&quot;              
-## [191] &quot;EMOSUPPEER&quot;              &quot;EMOSUPMHP&quot;              
-## [193] &quot;EMOSUPOTH&quot;               &quot;K6Q20&quot;                  
-## [195] &quot;K6Q27&quot;                   &quot;K9Q40&quot;                  
-## [197] &quot;K9Q41&quot;                   &quot;K11Q60&quot;                 
-## [199] &quot;K11Q61&quot;                  &quot;K11Q62&quot;                 
-## [201] &quot;S9Q34&quot;                   &quot;K10Q11&quot;                 
-## [203] &quot;K10Q12&quot;                  &quot;K10Q13&quot;                 
-## [205] &quot;K10Q14&quot;                  &quot;K10Q20&quot;                 
-## [207] &quot;K10Q22&quot;                  &quot;K10Q23&quot;                 
-## [209] &quot;K9Q96&quot;                   &quot;ACE3&quot;                   
-## [211] &quot;ACE4&quot;                    &quot;ACE5&quot;                   
-## [213] &quot;ACE6&quot;                    &quot;ACE7&quot;                   
-## [215] &quot;ACE8&quot;                    &quot;ACE9&quot;                   
-## [217] &quot;ACE10&quot;                   &quot;A1_DEPLSTAT&quot;            
-## [219] &quot;A2_DEPLSTAT&quot;             &quot;ALLERGIES_DESC&quot;         
-## [221] &quot;ARTHRITIS_DESC&quot;          &quot;K2Q40C&quot;                 
-## [223] &quot;CERPALS_DESC&quot;            &quot;K2Q41C&quot;                 
-## [225] &quot;K2Q42C&quot;                  &quot;HEART_DESC&quot;             
-## [227] &quot;HEADACHE_DESC&quot;           &quot;K2Q38C&quot;                 
-## [229] &quot;K2Q33C&quot;                  &quot;K2Q32C&quot;                 
-## [231] &quot;BLOOD_DESC&quot;              &quot;GENETIC_DESC&quot;           
-## [233] &quot;K2Q34C&quot;                  &quot;K2Q36C&quot;                 
-## [235] &quot;K2Q60C&quot;                  &quot;K2Q37C&quot;                 
-## [237] &quot;K2Q30C&quot;                  &quot;K2Q35C&quot;                 
-## [239] &quot;K2Q31C&quot;                  &quot;A1_SEX&quot;                 
-## [241] &quot;A1_BORN&quot;                 &quot;A1_GRADE&quot;               
-## [243] &quot;A1_MARITAL&quot;              &quot;A1_RELATION&quot;            
-## [245] &quot;A2_SEX&quot;                  &quot;A2_BORN&quot;                
-## [247] &quot;A2_GRADE&quot;                &quot;A2_MARITAL&quot;             
-## [249] &quot;A2_RELATION&quot;             &quot;A1_ACTIVE&quot;              
-## [251] &quot;A2_ACTIVE&quot;               &quot;A1_PHYSHEALTH&quot;          
-## [253] &quot;A1_MENTHEALTH&quot;           &quot;A2_PHYSHEALTH&quot;          
-## [255] &quot;A2_MENTHEALTH&quot;           &quot;K2Q01&quot;                  
-## [257] &quot;K2Q01_D&quot;                 &quot;K5Q40&quot;                  
-## [259] &quot;K5Q41&quot;                   &quot;K5Q42&quot;                  
-## [261] &quot;K5Q43&quot;                   &quot;K5Q44&quot;                  
-## [263] &quot;DISCUSSOPT&quot;              &quot;RAISECONC&quot;              
-## [265] &quot;BESTFORCHILD&quot;            &quot;K3Q20&quot;                  
-## [267] &quot;K3Q22&quot;                   &quot;K3Q21B&quot;                 
-## [269] &quot;K6Q70_R&quot;                 &quot;K6Q73_R&quot;                
-## [271] &quot;K6Q71_R&quot;                 &quot;K6Q72_R&quot;                
-## [273] &quot;K7Q84_R&quot;                 &quot;K7Q85_R&quot;                
-## [275] &quot;K7Q82_R&quot;                 &quot;K7Q83_R&quot;                
-## [277] &quot;K7Q70_R&quot;                 &quot;BULLIED_R&quot;              
-## [279] &quot;BULLY&quot;                   &quot;RECOGBEGIN&quot;             
-## [281] &quot;CLEAREXP&quot;                &quot;WRITENAME&quot;              
-## [283] &quot;RECSHAPES&quot;               &quot;DISTRACTED&quot;             
-## [285] &quot;WORKTOFIN&quot;               &quot;SIMPLEINST&quot;             
-## [287] &quot;PLAYWELL&quot;                &quot;NEWACTIVITY&quot;            
-## [289] &quot;HURTSAD&quot;                 &quot;CALMDOWN&quot;               
-## [291] &quot;TEMPER&quot;                  &quot;SITSTILL&quot;               
-## [293] &quot;RECOGABC&quot;                &quot;TALKABOUT&quot;              
-## [295] &quot;WKTOSOLVE&quot;               &quot;STRENGTHS&quot;              
-## [297] &quot;HOPEFUL&quot;                 &quot;K10Q30&quot;                 
-## [299] &quot;K10Q31&quot;                  &quot;K10Q40_R&quot;               
-## [301] &quot;GOFORHELP&quot;               &quot;K10Q41_R&quot;               
-## [303] &quot;K8Q31&quot;                   &quot;K8Q32&quot;                  
-## [305] &quot;K8Q34&quot;                   &quot;HOWMUCH&quot;                
-## [307] &quot;ATHOMEHC&quot;                &quot;ARRANGEHC&quot;              
-## [309] &quot;K7Q02R_R&quot;                &quot;K7Q04R_R&quot;               
-## [311] &quot;PHYSACTIV&quot;               &quot;HOURSLEEP05&quot;            
-## [313] &quot;HOURSLEEP&quot;               &quot;SCREENTIME&quot;             
-## [315] &quot;K6Q60_R&quot;                 &quot;K6Q61_R&quot;                
-## [317] &quot;K8Q11&quot;                   &quot;FOODSIT&quot;                
-## [319] &quot;POSCHOICE&quot;               &quot;GAINSKILLS&quot;             
-## [321] &quot;CHANGEAGE&quot;               &quot;K2Q35D&quot;                 
-## [323] &quot;HCABILITY&quot;               &quot;HCEXTENT&quot;               
-## [325] &quot;K4Q20R&quot;                  &quot;DOCROOM&quot;                
-## [327] &quot;WGTCONC&quot;                 &quot;K4Q02_R&quot;                
-## [329] &quot;DENTISTVISIT&quot;            &quot;K4Q22_R&quot;                
-## [331] &quot;TREATNEED&quot;               &quot;K4Q24_R&quot;                
-## [333] &quot;K4Q26&quot;                   &quot;C4Q04&quot;                  
-## [335] &quot;HOSPITALER&quot;              &quot;K4Q04_R&quot;                
-## [337] &quot;K5Q11&quot;                   &quot;K5Q20_R&quot;                
-## [339] &quot;K5Q22&quot;                   &quot;K5Q30&quot;                  
-## [341] &quot;K5Q32&quot;                   &quot;K5Q31_R&quot;                
-## [343] &quot;K8Q21&quot;                   &quot;K8Q30&quot;                  
-## [345] &quot;COUNTTO&quot;                 &quot;K7Q33&quot;                  
-## [347] &quot;BEDTIME&quot;                 &quot;K3Q04_R&quot;                
-## [349] &quot;K6Q08_R&quot;                 &quot;CONFIDENT&quot;              
-## [351] &quot;ACE1&quot;                    &quot;USEPENCIL&quot;              
-## [353] &quot;MAKEFRIEND&quot;              &quot;SLEEPPOS&quot;               
-## [355] &quot;COLOR&quot;                   &quot;K4Q30_R&quot;                
-## [357] &quot;STARTSCHOOL&quot;             &quot;MENBEVCOV&quot;              
-## [359] &quot;PLANNEEDS_R&quot;             &quot;YEAR&quot;                   
-## [361] &quot;CBSAFP_YN&quot;               &quot;METRO_YN&quot;               
-## [363] &quot;MPC_YN&quot;                  &quot;TOTAGE_0_5&quot;             
-## [365] &quot;TOTAGE_6_11&quot;             &quot;TOTAGE_12_17&quot;           
-## [367] &quot;TOTCSHCN&quot;                &quot;TOTNONSHCN&quot;             
-## [369] &quot;SC_RACE_R&quot;               &quot;SC_HISPANIC_R&quot;          
-## [371] &quot;SC_CSHCN&quot;                &quot;SC_ENGLISH&quot;             
-## [373] &quot;SC_K2Q10&quot;                &quot;SC_K2Q11&quot;               
-## [375] &quot;SC_K2Q12&quot;                &quot;SC_K2Q13&quot;               
-## [377] &quot;SC_K2Q14&quot;                &quot;SC_K2Q15&quot;               
-## [379] &quot;SC_K2Q16&quot;                &quot;SC_K2Q17&quot;               
-## [381] &quot;SC_K2Q18&quot;                &quot;SC_K2Q19&quot;               
-## [383] &quot;SC_K2Q20&quot;                &quot;SC_K2Q21&quot;               
-## [385] &quot;SC_K2Q22&quot;                &quot;SC_K2Q23&quot;               
-## [387] &quot;SC_AGE_LT4&quot;              &quot;SC_AGE_LT6&quot;             
-## [389] &quot;SC_AGE_LT9&quot;              &quot;SC_AGE_LT10&quot;            
-## [391] &quot;AGEPOS4&quot;                 &quot;TENURE_IF&quot;              
-## [393] &quot;TOTMALE&quot;                 &quot;TOTFEMALE&quot;              
-## [395] &quot;SC_RACE_R_IF&quot;            &quot;SC_RACER&quot;               
-## [397] &quot;SC_RACEASIA&quot;             &quot;SC_RACEAIAN&quot;            
-## [399] &quot;SC_HISPANIC_R_IF&quot;        &quot;SC_SEX_IF&quot;              
-## [401] &quot;BIRTHWT_OZ_S&quot;            &quot;BREASTFEDEND_DAY_S&quot;     
-## [403] &quot;BREASTFEDEND_WK_S&quot;       &quot;BREASTFEDEND_MO_S&quot;      
-## [405] &quot;FRSTFORMULA_DAY_S&quot;       &quot;FRSTFORMULA_WK_S&quot;       
-## [407] &quot;FRSTFORMULA_MO_S&quot;        &quot;FRSTSOLIDS_DAY_S&quot;       
-## [409] &quot;FRSTSOLIDS_WK_S&quot;         &quot;FRSTSOLIDS_MO_S&quot;        
-## [411] &quot;HOUSE_GEN&quot;               &quot;FAMILY_R&quot;               
-## [413] &quot;CURRINS&quot;                 &quot;INSGAP&quot;                 
-## [415] &quot;INSTYPE&quot;                 &quot;HIGRADE&quot;                
-## [417] &quot;HIGRADE_TVIS&quot;            &quot;BIRTHWT_VL&quot;             
-## [419] &quot;BIRTHWT_L&quot;               &quot;BIRTHWT&quot;                
-## [421] &quot;FPL_IF&quot;                  &quot;A1_GRADE_IF&quot;            
-## [423] &quot;BIRTH_YR_F&quot;              &quot;BMICLASS&quot;               
-## [425] &quot;HHCOUNT_IF&quot;              &quot;FPL_I1&quot;                 
-## [427] &quot;FPL_I2&quot;                  &quot;FPL_I3&quot;                 
-## [429] &quot;FPL_I4&quot;                  &quot;FPL_I5&quot;                 
-## [431] &quot;FPL_I6&quot;                  &quot;fwc_1920&quot;               
-## [433] &quot;hrsareg&quot;                 &quot;age3_1920&quot;              
-## [435] &quot;age5_1920&quot;               &quot;sex_1920&quot;               
-## [437] &quot;hispanic_1920&quot;           &quot;race4_1920&quot;             
-## [439] &quot;raceASIA_1920&quot;           &quot;race7_1920&quot;             
-## [441] &quot;PrntNativity_1920&quot;       &quot;HHLanguage_1920&quot;        
-## [443] &quot;hisplang_1920&quot;           &quot;famstruct5_1920&quot;        
-## [445] &quot;povlev4_1920&quot;            &quot;povSCHIP_1920&quot;          
-## [447] &quot;AdultEduc_1920&quot;          &quot;BornUSA_1920&quot;           
-## [449] &quot;FamCount_1920&quot;           &quot;MilitarySt_1920&quot;        
-## [451] &quot;ChHlthSt_1920&quot;           &quot;TeethCond_1920&quot;         
-## [453] &quot;toothache_1920&quot;          &quot;gumbleed_1920&quot;          
-## [455] &quot;cavities_1920&quot;           &quot;ctOralProb_1920&quot;        
-## [457] &quot;OralProb_1920&quot;           &quot;BrstEver_1920&quot;          
-## [459] &quot;BrstStop_1920&quot;           &quot;FedForm_1920&quot;           
-## [461] &quot;FedOther_1920&quot;           &quot;ExBrstFd_1920&quot;          
-## [463] &quot;BMI4_1920&quot;               &quot;BMI3_1920&quot;              
-## [465] &quot;ToldOverweight_1920&quot;     &quot;PhysAct_1920&quot;           
-## [467] &quot;WgtConcn_1920&quot;           &quot;LowBWght_1920&quot;          
-## [469] &quot;VeryLBWght_1920&quot;         &quot;BornPre_1920&quot;           
-## [471] &quot;allergies_1920&quot;          &quot;arthritis_1920&quot;         
-## [473] &quot;asthma_1920&quot;             &quot;BloodScr_1920&quot;          
-## [475] &quot;blood_1920&quot;              &quot;palsy_1920&quot;             
-## [477] &quot;CystFibScr_1920&quot;         &quot;CystFib_1920&quot;           
-## [479] &quot;diabetes_1920&quot;           &quot;DownSynd_1920&quot;          
-## [481] &quot;seizure_1920&quot;            &quot;GeneticScr_1920&quot;        
-## [483] &quot;genetic_1920&quot;            &quot;heart_1920&quot;             
-## [485] &quot;headache_1920&quot;           &quot;tourette_1920&quot;          
-## [487] &quot;anxiety_1920&quot;            &quot;depress_1920&quot;           
-## [489] &quot;behavior_1920&quot;           &quot;DevDelay_1920&quot;          
-## [491] &quot;IntDisab_1920&quot;           &quot;speech_1920&quot;            
-## [493] &quot;learning_1920&quot;           &quot;autism_1920&quot;            
-## [495] &quot;ADHD_1920&quot;               &quot;hearing_1920&quot;           
-## [497] &quot;vision_1920&quot;             &quot;CondCnt_1920&quot;           
-## [499] &quot;Cond2more_1920&quot;          &quot;AllerSev_1920&quot;          
-## [501] &quot;ArthrSev_1920&quot;           &quot;AsthmSev_1920&quot;          
-## [503] &quot;BloodSev_1920&quot;           &quot;PalsySev_1920&quot;          
-## [505] &quot;DiabetSev_1920&quot;          &quot;SeizSev_1920&quot;           
-## [507] &quot;GenetSev_1920&quot;           &quot;HeartSev_1920&quot;          
-## [509] &quot;HeadSev_1920&quot;            &quot;TouretSev_1920&quot;         
-## [511] &quot;AnxietSev_1920&quot;          &quot;DepresSev_1920&quot;         
-## [513] &quot;BehavSev_1920&quot;           &quot;DevDelSev_1920&quot;         
-## [515] &quot;IntDisSev_1920&quot;          &quot;SpeechSev_1920&quot;         
-## [517] &quot;LearnSev_1920&quot;           &quot;AutismSev_1920&quot;         
-## [519] &quot;ADHDSev_1920&quot;            &quot;cntdiff&quot;                
-## [521] &quot;Diff2more_1920&quot;          &quot;DiffBreath_1920&quot;        
-## [523] &quot;DiffSwall_1920&quot;          &quot;DiffDigest_1920&quot;        
-## [525] &quot;DiffPain_1920&quot;           &quot;DiffHands_1920&quot;         
-## [527] &quot;DiffCoor_1920&quot;           &quot;DiffMem_1920&quot;           
-## [529] &quot;DiffWalk_1920&quot;           &quot;DiffDress_1920&quot;         
-## [531] &quot;DiffErrand_1920&quot;         &quot;CSHCN_1920&quot;             
-## [533] &quot;rxmeds_1920&quot;             &quot;serve_1920&quot;             
-## [535] &quot;func_1920&quot;               &quot;therapy_1920&quot;           
-## [537] &quot;mhealth_1920&quot;            &quot;qualnum_1920&quot;           
-## [539] &quot;CSHCNtype_1920&quot;          &quot;CSHCNComplex_1920&quot;      
-## [541] &quot;mhneeds_1920&quot;            &quot;qualnum4_1920&quot;          
-## [543] &quot;bully_1920&quot;              &quot;bullied_1920&quot;           
-## [545] &quot;flrsh0to5ct&quot;             &quot;flrish0to5_1920&quot;        
-## [547] &quot;tender_1920&quot;             &quot;resil0to5_1920&quot;         
-## [549] &quot;curious0to5_1920&quot;        &quot;smile_1920&quot;             
-## [551] &quot;flrsh6to17ct&quot;            &quot;flrish6to17_1920&quot;       
-## [553] &quot;curious6to17_1920&quot;       &quot;finishes_1920&quot;          
-## [555] &quot;resil6to17_1920&quot;         &quot;argue_1920&quot;             
-## [557] &quot;MakeFriend_1920&quot;         &quot;ADHDind_1920&quot;           
-## [559] &quot;ADHDSevInd_1920&quot;         &quot;ADHDMed_1920&quot;           
-## [561] &quot;ADHDBehTreat_1920&quot;       &quot;AutismInd_1920&quot;         
-## [563] &quot;ASDSevInd_1920&quot;          &quot;ASDMed_1920&quot;            
-## [565] &quot;ASDBehTreat_1920&quot;        &quot;ASDAge_1920&quot;            
-## [567] &quot;ASDDrType_1920&quot;          &quot;MedEmotion_1920&quot;        
-## [569] &quot;MEDB10ScrQ5_1920&quot;        &quot;CurrIns_1920&quot;           
-## [571] &quot;InsGap_1920&quot;             &quot;NoCovEmp_1920&quot;          
-## [573] &quot;NoCovOverdue_1920&quot;       &quot;NoCovUnafford_1920&quot;     
-## [575] &quot;NoCovBenInadeq_1920&quot;     &quot;NoCovProvInadeq_1920&quot;   
-## [577] &quot;NoCovRenew_1920&quot;         &quot;instype_1920&quot;           
-## [579] &quot;benefits_1920&quot;           &quot;allows_1920&quot;            
-## [581] &quot;expense_1920&quot;            &quot;InsAdeq_1920&quot;           
-## [583] &quot;insurance_1920&quot;          &quot;InsMentH_1920&quot;          
-## [585] &quot;OutOfPckt_1920&quot;          &quot;MedCare_1920&quot;           
-## [587] &quot;PrevMed_1920&quot;            &quot;VisitTime_1920&quot;         
-## [589] &quot;PrivateTalk_1920&quot;        &quot;DentCare_1920&quot;          
-## [591] &quot;PrevDent_1920&quot;           &quot;DentCheck_1920&quot;         
-## [593] &quot;DentCleaning_1920&quot;       &quot;DentInstruct_1920&quot;      
-## [595] &quot;DentXray_1920&quot;           &quot;fluoride_1920&quot;          
-## [597] &quot;sealant_1920&quot;            &quot;MedDentCare_1920&quot;       
-## [599] &quot;MentHCare_1920&quot;          &quot;MentHDiff_1920&quot;         
-## [601] &quot;SpecCare_1920&quot;           &quot;SpCareDiff_1920&quot;        
-## [603] &quot;VisnTest_1920&quot;           &quot;EyeDoctor_1920&quot;         
-## [605] &quot;EyePedOffice_1920&quot;       &quot;EyeClinic_1920&quot;         
-## [607] &quot;EyeSchool_1920&quot;          &quot;ERVisit_1920&quot;           
-## [609] &quot;ERVisit1more_1920&quot;       &quot;HospitalStay_1920&quot;      
-## [611] &quot;AlterHC_1920&quot;            &quot;Num1Service_1920&quot;       
-## [613] &quot;DrAskConc_1920&quot;          &quot;DevScrnng_1920&quot;         
-## [615] &quot;SpecServ_1920&quot;           &quot;SpSerAge_1920&quot;          
-## [617] &quot;PerDrNs_1920&quot;            &quot;UsualSck_1920&quot;          
-## [619] &quot;time_1920&quot;               &quot;listen_1920&quot;            
-## [621] &quot;sensitiv_1920&quot;           &quot;info_1920&quot;              
-## [623] &quot;partner_1920&quot;            &quot;famcentitems_1920&quot;      
-## [625] &quot;FamCent_1920&quot;            &quot;NoRefPrb_1920&quot;          
-## [627] &quot;NoRefPrb2_1920&quot;          &quot;DrComm_1920&quot;            
-## [629] &quot;CareHelp_1920&quot;           &quot;OthComm_1920&quot;           
-## [631] &quot;CareCoor_1920&quot;           &quot;CareCoorR_1920&quot;         
-## [633] &quot;MedHome_1920&quot;            &quot;HelpCoord_1920&quot;         
-## [635] &quot;ExtraHelp_1920&quot;          &quot;AllExtraHelp_1920&quot;      
-## [637] &quot;OtherComm_1920&quot;          &quot;SatOthComm_1920&quot;        
-## [639] &quot;DrCommR_1920&quot;            &quot;DiscussOpt_1920&quot;        
-## [641] &quot;RaiseConc_1920&quot;          &quot;BestChoice_1920&quot;        
-## [643] &quot;ShareDec_1920&quot;           &quot;TimeAlone_1920&quot;         
-## [645] &quot;ActiveWork_1920&quot;         &quot;TrtChild_1920&quot;          
-## [647] &quot;TrtAdult_1920&quot;           &quot;Transition_1920&quot;        
-## [649] &quot;ChngeAge_1920&quot;           &quot;PosChoice_1920&quot;         
-## [651] &quot;GainSkill_1920&quot;          &quot;MedHistory_1920&quot;        
-## [653] &quot;InsNeeds_1920&quot;           &quot;PlanCare_1920&quot;          
-## [655] &quot;PlanAccess_1920&quot;         &quot;PlanNeeds_1920&quot;         
-## [657] &quot;UnmetFrust_1920&quot;         &quot;sys0to11care2_1920&quot;     
-## [659] &quot;sys12to17care2_1920&quot;     &quot;SystCare2_1920&quot;         
-## [661] &quot;ForgoneCare_1920&quot;        &quot;ForgoneMed_1920&quot;        
-## [663] &quot;ForgoneDent_1920&quot;        &quot;ForgoneVis_1920&quot;        
-## [665] &quot;ForgoneHear_1920&quot;        &quot;ForgoneMH_1920&quot;         
-## [667] &quot;ineligible_1920&quot;         &quot;unavailable_1920&quot;       
-## [669] &quot;appointment_1920&quot;        &quot;transport_1920&quot;         
-## [671] &quot;NotOpen_1920&quot;            &quot;CostIssue_1920&quot;         
-## [673] &quot;MedBills_1920&quot;           &quot;frustrated_1920&quot;        
-## [675] &quot;SpEducPln_1920&quot;          &quot;SpEdAge_1920&quot;           
-## [677] &quot;cares_1920&quot;              &quot;homework_1920&quot;          
-## [679] &quot;SchlEngage_1920&quot;         &quot;ReptGrade_1920&quot;         
-## [681] &quot;SchlMiss_1920&quot;           &quot;sports_1920&quot;            
-## [683] &quot;clubs_1920&quot;              &quot;lessons_1920&quot;           
-## [685] &quot;partic_1920&quot;             &quot;AftSchAct_1920&quot;         
-## [687] &quot;EventPart_1920&quot;          &quot;EventPart2_1920&quot;        
-## [689] &quot;volunteer_1920&quot;          &quot;workpay_1920&quot;           
-## [691] &quot;mentor_1920&quot;             &quot;LearnThings_1920&quot;       
-## [693] &quot;confident_1920&quot;          &quot;RecogBegin_1920&quot;        
-## [695] &quot;RecogLetter_1920&quot;        &quot;RhymeWord_1920&quot;         
-## [697] &quot;ClearExp_1920&quot;           &quot;WriteName_1920&quot;         
-## [699] &quot;CountTo_1920&quot;            &quot;RecogShapes_1920&quot;       
-## [701] &quot;distracted_1920&quot;         &quot;WorkToFin_1920&quot;         
-## [703] &quot;SimpleInst_1920&quot;         &quot;UsePencil_1920&quot;         
-## [705] &quot;PlayWell_1920&quot;           &quot;NewActivity_1920&quot;       
-## [707] &quot;HurtSad_1920&quot;            &quot;CalmDown_1920&quot;          
-## [709] &quot;temper_1920&quot;             &quot;MakeFr3to5_1920&quot;        
-## [711] &quot;SitStill1_1920&quot;          &quot;color_1920&quot;             
-## [713] &quot;OneWord_1920&quot;            &quot;TwoWords_1920&quot;          
-## [715] &quot;ThreeWords_1920&quot;         &quot;AskQuest1_1920&quot;         
-## [717] &quot;AskQuest2_1920&quot;          &quot;TellStory_1920&quot;         
-## [719] &quot;understand_1920&quot;         &quot;directions_1920&quot;        
-## [721] &quot;point_1920&quot;              &quot;TwoStepDirec_1920&quot;      
-## [723] &quot;Understand2_1920&quot;        &quot;MothPhyH_1920&quot;          
-## [725] &quot;FathPhyH_1920&quot;           &quot;MotherMH_1920&quot;          
-## [727] &quot;FatherMH_1920&quot;           &quot;MotherHSt_1920&quot;         
-## [729] &quot;FatherHSt_1920&quot;          &quot;smoking_1920&quot;           
-## [731] &quot;SmkInside_1920&quot;          &quot;ShareIdeas_1920&quot;        
-## [733] &quot;readto_1920&quot;             &quot;SingStory_1920&quot;         
-## [735] &quot;MealTogether_1920&quot;       &quot;ScreenTime_1920&quot;        
-## [737] &quot;TalkAbout_1920&quot;          &quot;WrkToSolve_1920&quot;        
-## [739] &quot;strengths_1920&quot;          &quot;hopeful_1920&quot;           
-## [741] &quot;CtFamRes_1920&quot;           &quot;FamResilience_1920&quot;     
-## [743] &quot;FamResilience2_1920&quot;     &quot;ACEincome_1920&quot;         
-## [745] &quot;ACEincome2_1920&quot;         &quot;ACEdivorce_1920&quot;        
-## [747] &quot;ACEdeath_1920&quot;           &quot;ACEjail_1920&quot;           
-## [749] &quot;ACEdomviol_1920&quot;         &quot;ACEneighviol_1920&quot;      
-## [751] &quot;ACEmhealth_1920&quot;         &quot;ACEdrug_1920&quot;           
-## [753] &quot;ACEdiscrim_1920&quot;         &quot;ACEct_1920&quot;             
-## [755] &quot;ACE2more_1920&quot;           &quot;DiffCare_1920&quot;          
-## [757] &quot;bother_1920&quot;             &quot;angry_1920&quot;             
-## [759] &quot;ParAgg_ct&quot;               &quot;ParAggrav_1920&quot;         
-## [761] &quot;EmSupport_1920&quot;          &quot;EmSSpouse_1920&quot;         
-## [763] &quot;EmSFamily_1920&quot;          &quot;EmSProvider_1920&quot;       
-## [765] &quot;EmSWorship_1920&quot;         &quot;EmSSupGrp_1920&quot;         
-## [767] &quot;EmSPeer_1920&quot;            &quot;EmSMental_1920&quot;         
-## [769] &quot;ParCoping_1920&quot;          &quot;JobChange_1920&quot;         
-## [771] &quot;StopCutWork_1920&quot;        &quot;AvoidChng_1920&quot;         
-## [773] &quot;HomeCare_1920&quot;           &quot;TimeCoord_1920&quot;         
-## [775] &quot;Care10hrs_1920&quot;          &quot;SLEEPPOS_1920&quot;          
-## [777] &quot;BedTime_1920&quot;            &quot;HrsSleep_1920&quot;          
-## [779] &quot;FoodSit_1920&quot;            &quot;FoodCash_ct&quot;            
-## [781] &quot;FoodCash_1920&quot;           &quot;WIC_1920&quot;               
-## [783] &quot;CashAss_1920&quot;            &quot;FoodStamp_1920&quot;         
-## [785] &quot;MealFree_1920&quot;           &quot;NbhdSupp_1920&quot;          
-## [787] &quot;NbhdSafe_1920&quot;           &quot;SchlSafe_1920&quot;          
-## [789] &quot;SideWlks_1920&quot;           &quot;park_1920&quot;              
-## [791] &quot;RecCentr_1920&quot;           &quot;library_1920&quot;           
-## [793] &quot;NbhdAmenities_1920&quot;      &quot;litter_1920&quot;            
-## [795] &quot;housing_1920&quot;            &quot;vandal_1920&quot;            
-## [797] &quot;NbhdDetract_1920&quot;        &quot;comm_cond&quot;              
-## [799] &quot;nom14TthDec_1920&quot;        &quot;nom17_1CSHCN_1920&quot;      
-## [801] &quot;nom17_2sysCSHCN_1920&quot;    &quot;nom17_3ASD_1920&quot;        
-## [803] &quot;nom17_4ADHD_1920&quot;        &quot;nom18MHlth_1920&quot;        
-## [805] &quot;nom19ChHSt_1920&quot;         &quot;nom20obese_1920&quot;        
-## [807] &quot;nom25ForgoneHC_1920&quot;     &quot;npm6DSc_1920&quot;           
-## [809] &quot;npm8PhAc6to11_1920&quot;      &quot;npm8PhAc12to17_1920&quot;    
-## [811] &quot;npm9bullied_1920&quot;        &quot;npm9bully_1920&quot;         
-## [813] &quot;npm10PrVi_1920&quot;          &quot;npm11MHCSHCN_1920&quot;      
-## [815] &quot;npm11MHnonCSHCN_1920&quot;    &quot;npm12TransCSHCN_1920&quot;   
-## [817] &quot;npm12TransNonCSHCN_1920&quot; &quot;npm13_2DePrev_1920&quot;     
-## [819] &quot;npm14_2Smoke_1920&quot;       &quot;npm15AdIns_1920&quot;</code></pre>
+dat17_18b&lt;-dat17_18%&gt;%
+  select(            HHID,FIPSST,STRATUM,
+                     InsType_1718,
+                        SC_AGE_YEARS,
+                    SC_SEX,
+                     SC_RACE_R,
+                      #   sc_race_ethnic_16to20,
+               famstruct5_1718,
+               contains(&quot;fpl&quot;),
+               HHLANGUAGE,
+               FAMCOUNT,
+               # Child Health Complexity Variables
+               HCABILITY,
+               HCEXTENT,
+               ATHOMEHC,
+               ARRANGEHC,
+               K4Q22_R,
+               K4Q23,
+               K4Q24_R,
+               K4Q36,
+               K4Q01,
+               K4Q02_R,
+               HOSPITALER,
+               K4Q20R,
+               BREATHING,
+               SWALLOWING,
+               STOMACH,
+               BLINDNESS,
+               K2Q43B,
+               PHYSICALPAIN,
+               # maybe not use
+               HANDS,
+               COORDINATION,
+               MEMORYCOND,
+               WALKSTAIRS,
+               DRESSING,
+               # other predictors
+               C4Q04,
+               K5Q20_R,
+               K5Q21,
+               K8Q35,
+               K2Q05,
+               MOMAGE,
+               StopCutWork_1718,
+               AVOIDCHG,
+               # health conditions that could be categories
+                    # mood/behavior dx
+                    K2Q33C,
+                    K2Q32C,
+                    K2Q34C,
+                    # ASD
+                    K2Q35C,
+                    # brain injury
+                    K2Q46C,
+                    # CP
+                    K2Q61B,
+                    # epilepsy/seizure
+                    K2Q42C,
+                    # develop delay
+                    K2Q36C,
+                    # ID
+                    K2Q60C,
+                    # speach/language dx
+                    K2Q37C,
+                    # learning disorder
+                    K2Q30C,
+                #weight
+                    FWC_adj)
+
+dat16b&lt;-dat16%&gt;%
+  select(     HHID,FIPSST,STRATUM,
+              instype_16,
+                        SC_AGE_YEARS,
+            #   sc_age_3cat,
+            SC_SEX,
+            #   sc_sex,
+            SC_RACE_R,
+            #SC_RACE_R
+            #   sc_race_ethnic_16to20,
+               famstruct_16,
+               contains(&quot;fpl&quot;),
+               HHLANGUAGE,
+               FAMCOUNT,
+               # Child Health Complexity Variables
+               HCABILITY,
+               HCEXTENT,
+               ATHOMEHC,
+               ARRANGEHC,
+               K4Q22_R,
+               K4Q23,
+               K4Q24_R,
+               K4Q36,
+               K4Q01,
+               K4Q02_R,
+               HOSPITALER,
+               K4Q20R,
+               BREATHING,
+               SWALLOWING,
+               STOMACH,
+               BLINDNESS,
+               K2Q43B,
+               PHYSICALPAIN,
+               # maybe not use
+               HANDS,
+               COORDINATION,
+               MEMORYCOND,
+               WALKSTAIRS,
+               DRESSING,
+               # other predictors
+               C4Q04,
+               K5Q20_R,
+               K5Q21,
+               K8Q35,
+               K2Q05,
+               MOMAGE,
+               StopCutWork_16,
+               AVOIDCHG,
+               # health conditions that could be categories
+                    # mood/behavior dx
+                    K2Q33C,
+                    K2Q32C,
+                    K2Q34C,
+                    # ASD
+                    K2Q35C,
+                    # brain injury
+                    K2Q46C,
+                    # CP
+                    K2Q61B,
+                    # epilepsy/seizure
+                    K2Q42C,
+                    # develop delay
+                    K2Q36C,
+                    # ID
+                    K2Q60C,
+                    # speach/language dx
+                    K2Q37C,
+                    # learning disorder
+                    K2Q30C,
+                #weight
+                    FWC_adj)</code></pre>
+</div>
+<div id="extract-these-outcome-variables-from-each-dataset" class="section level3">
+<h3>Extract these outcome variables from each dataset</h3>
+<pre class="r"><code>               #outcomes
+#               cg_mentalhealth, cg_mgmtparent,
+#               cg_aggravation1, cg_aggravation2, cg_aggravation3,
+#               cg_aggravation_comp)
+#                # Caregiver, Child, and Family Sociodemographics
+#               cg_age_3cat,
+#               cg_gender,
+#               cg_marital_3cat,
+#               cg_education_3cat,
+#               cg_relationship_4cat,</code></pre>
+</div>
+<div id="rename-the-3-columns-named-differently-to-become-uniform" class="section level3">
+<h3>Rename the 3 columns named differently to become uniform</h3>
+<pre class="r"><code>detach(&quot;package:plyr&quot;, unload = TRUE)
+dat16b&lt;-dat16b%&gt;%
+  rename(instype=instype_16,
+         famstruct=famstruct_16,
+         StopCutWork=StopCutWork_16)
+
+dat17_18b&lt;-dat17_18b%&gt;%
+  rename(instype=InsType_1718,
+         famstruct=famstruct5_1718,
+         StopCutWork=StopCutWork_1718)
+
+dat19_20b&lt;-dat19_20b%&gt;%
+  rename(instype=instype_1920,
+         famstruct=famstruct5_1920,
+         StopCutWork=StopCutWork_1920)</code></pre>
+</div>
+<div id="combine-all-5-years-20162017-2018-2019-2020" class="section level3">
+<h3>Combine all 5 years (2016,2017-2018, 2019-2020)</h3>
+<pre class="r"><code>library(plyr)
+dat&lt;-rbind.fill(dat16b,dat17_18b,dat19_20b) #fill non-matching columns with NA</code></pre>
+</div>
+<div id="categorize-these-vars-into-3-groups" class="section level3">
+<h3>Categorize these vars into 3 groups</h3>
+<pre class="r"><code>#
+#               cg_age_3cat,
+#               cg_gender,
+#               cg_marital_3cat,
+#               cg_education_3cat,
+#               cg_relationship_4cat,
+
+#               hcability_3cat,
+#               hcextent_3cat,
+#               athomehc_3cat,
+#               arrangehc_3cat,
+               
+#               k4q02_r_3cat
+#               c4q04_3cat,
+#               momage_3cat
+
+
+
+dat$AGE_GRP[dat$SC_AGE_YEARS&lt;=4]&lt;-&quot;0-4&quot;
+dat$AGE_GRP[dat$SC_AGE_YEARS %in% c(5:8)]&lt;-&quot;5-8&quot;
+dat$AGE_GRP[dat$SC_AGE_YEARS %in% c(9:12)]&lt;-&quot;9-12&quot;
+dat$AGE_GRP[dat$SC_AGE_YEARS %in% c(13:16)]&lt;-&quot;13-16&quot;
+dat$AGE_GRP[dat$SC_AGE_YEARS&gt;=16]&lt;-&quot;&gt;16&quot;
+
+dat&lt;-dat%&gt;%
+  ## make sure the variables are factors
+  mutate(AGE_GRP = factor(AGE_GRP,levels = c(&quot;0-4&quot;,&quot;5-8&quot;,&quot;9-12&quot;,&quot;13-16&quot;,&quot;&gt;16&quot;)), 
+         SC_SEX = factor(SC_SEX))</code></pre>
+</div>
+<div id="create-survey-object" class="section level3">
+<h3>Create survey object</h3>
+<pre class="r"><code>nsch_design&lt;-svydesign(
+  id=~HHID,
+  strata = ~ STRATUM,
+  weights = ~ FWC_adj,
+  data = dat)</code></pre>
+</div>
+<div id="free-memory" class="section level3">
+<h3>Free memory</h3>
+<pre class="r"><code>#rm(list = c(dat16,dat16b,dat17_18,dat17_18b,dat19_20,dat19_20b))</code></pre>
+</div>
+<div id="descriptive-statistics-with-weight-estimates" class="section level3">
+<h3>Descriptive statistics with weight estimates</h3>
+</div>
+<div id="using-survyr-package-and-survey-package" class="section level3">
+<h3>Using SURVYR package and SURVEY package</h3>
+<pre class="r"><code>detach(&quot;package:plyr&quot;, unload = TRUE)
+nsch_df_sv&lt;-as_survey(nsch_design)</code></pre>
+</div>
+<div id="creating-a-subpopulation" class="section level3">
+<h3>Creating a subpopulation</h3>
+<p>subset(), filter() or even ] can be used on the survey objects to appropriately create sub-population data</p>
+<pre class="r"><code>nsch_df_sv%&gt;%
+  group_by(SC_SEX)%&gt;%
+  summarize(N=n(),
+            Average_age=survey_mean(SC_AGE_YEARS,vartype = c(&quot;ci&quot;)),
+            pct=survey_prop(prop_method = &quot;likelihood&quot;,vartype = c(&quot;ci&quot;))) #use Rao Scot Method</code></pre>
+<pre><code>## # A tibble: 2 x 8
+##   SC_SEX     N Average_age Average_age_low Average_age_upp   pct pct_low pct_upp
+##   &lt;fct&gt;  &lt;int&gt;       &lt;dbl&gt;           &lt;dbl&gt;           &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+## 1 1      90204        8.64            8.56            8.71 0.511   0.506   0.516
+## 2 2      84347        8.64            8.56            8.72 0.489   0.484   0.494</code></pre>
+<pre class="r"><code>#FLIPPED PYRAMID
+library(apyramid)</code></pre>
+<pre><code>## Warning: package &#39;apyramid&#39; was built under R version 4.1.3</code></pre>
+<pre class="r"><code>library(ggplot2)</code></pre>
+<pre class="r"><code>## define x-axis limits and labels ---------------------------------------------
+## (update these numbers to be the values for your graph)
+max_prop &lt;- 30      # choose the highest proportion you want to show 
+step &lt;- 5           # choose the space you want between labels 
+
+## this part defines vector using the above numbers with axis breaks
+breaks &lt;- c(
+    seq(max_prop/100 * -1, 0 - step/100, step/100), 
+    0, 
+    seq(0 + step / 100, max_prop/100, step/100)
+    )
+
+## this part defines vector using the above numbers with axis limits
+limits &lt;- c(max_prop/100 * -1, max_prop/100)
+
+## this part defines vector using the above numbers with axis labels
+labels &lt;-  c(
+      seq(max_prop, step, -step), 
+      0, 
+      seq(step, max_prop, step)
+    )</code></pre>
+<pre class="r"><code>## plot the weighted sample population 
+weighted_population &lt;- nsch_df_sv %&gt;%
+  
+  age_pyramid(
+    age_group = &quot;AGE_GRP&quot;,
+    split_by = &quot;SC_SEX&quot;, 
+    proportion = TRUE) +
+  ## only show the x axis label (otherwise repeated in all three plots)
+  labs(title = &quot;Weighted sample population&quot;, 
+       y = &quot;&quot;, 
+       x = &quot;&quot;)  + 
+  ## make the x axis the same for all plots 
+  scale_y_continuous(
+    breaks = breaks, 
+    limits = limits, 
+    labels = labels)</code></pre>
+<pre><code>## Scale for &#39;y&#39; is already present. Adding another scale for &#39;y&#39;, which will
+## replace the existing scale.</code></pre>
+<pre class="r"><code>weighted_population</code></pre>
+<p><img src="data:image/png;base64,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" width="672" /></p>
+</div>
+<div id="generalized-linear-models" class="section level3">
+<h3>Generalized linear models</h3>
+<pre class="r"><code>#svyglm()</code></pre>
+</div>
+<div id="cart-using-glmertree-package" class="section level3">
+<h3>CART using glmertree package</h3>
+<pre class="r"><code>library(glmertree)
+# Regression
+
+
+# Classification algorithms</code></pre>
+</div>
 
 
 

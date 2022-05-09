@@ -10,11 +10,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-Goal: TO download the complete dataset, clean and split into subsets for downstream analyses.
+### Goal: To download the complete dataset, clean and split into subsets for downstream analyses.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 rm(list = ls())
 library(readr)
+library(plyr)
 library(dplyr)
 library(survey)
 library(srvyr)
@@ -22,7 +23,7 @@ library(srvyr)
 ```
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 
 dat16<- read_csv("2016NSCHTopical_DRCv3_Sep2018.csv")
 dat17_18<- read_csv("2017-2018 NSCH_Topical_DRC_Dec 2019.csv")
@@ -31,8 +32,8 @@ dat19_20<- read_csv("2019-2020 NSCH_Topical_CAHMI_DRC.csv")
 ```
 
 
-For each year, adjust the weights so that they can be combined
-```{r}
+### For each year, adjust the weights so that the dataset can be combined
+```{r message=FALSE, warning=FALSE}
 
 dat16$FWC_adj<-dat16$FWC/5
 dat17_18$FWC_adj<-(dat17_18$FWC_1718*2)/5
@@ -40,18 +41,16 @@ dat19_20$FWC_adj<-(dat19_20$fwc_1920*2)/5
 
 ```
 
-Select variables from each year
-```{r}
+### Select variables from each year
+```{r message=FALSE, warning=FALSE}
 
 dat19_20b<-dat19_20%>%
-  select(               instype_1920,
+  select(             HHID,FIPSST,STRATUM,
+                      instype_1920,
                         SC_AGE_YEARS,
-            #   sc_age_3cat,
-            SC_SEX,
-            #   sc_sex,
-            SC_RACE_R,
-            #SC_RACE_R
-            #   sc_race_ethnic_16to20,
+                       SC_SEX,
+                        SC_RACE_R,
+                        #   sc_race_ethnic_16to20,
                famstruct5_1920,
                contains("fpl"),
                HHLANGUAGE,
@@ -115,14 +114,12 @@ dat19_20b<-dat19_20%>%
                     FWC_adj)
 
 dat17_18b<-dat17_18%>%
-  select(               InsType_1718,
+  select(            HHID,FIPSST,STRATUM,
+                     InsType_1718,
                         SC_AGE_YEARS,
-            #   sc_age_3cat,
-            SC_SEX,
-            #   sc_sex,
-            SC_RACE_R,
-            #SC_RACE_R
-            #   sc_race_ethnic_16to20,
+                    SC_SEX,
+                     SC_RACE_R,
+                      #   sc_race_ethnic_16to20,
                famstruct5_1718,
                contains("fpl"),
                HHLANGUAGE,
@@ -186,7 +183,8 @@ dat17_18b<-dat17_18%>%
                     FWC_adj)
 
 dat16b<-dat16%>%
-  select(               instype_16,
+  select(     HHID,FIPSST,STRATUM,
+              instype_16,
                         SC_AGE_YEARS,
             #   sc_age_3cat,
             SC_SEX,
@@ -260,25 +258,201 @@ dat16b<-dat16%>%
 
 ```
 
-Rename
-```{r}
-dat16b$instype_16
+### Extract these outcome variables from each dataset 
+```{r message=FALSE, warning=FALSE}
+               #outcomes
+#               cg_mentalhealth, cg_mgmtparent,
+#               cg_aggravation1, cg_aggravation2, cg_aggravation3,
+#               cg_aggravation_comp)
+#                # Caregiver, Child, and Family Sociodemographics
+#               cg_age_3cat,
+#               cg_gender,
+#               cg_marital_3cat,
+#               cg_education_3cat,
+#               cg_relationship_4cat,
+```
 
-dat16b%>%
-  mutate(instype_16,famstruct_16,StopCutWork_16)
+### Rename the 3 columns named differently to become uniform
+```{r warning=FALSE}
 
-dat16b%>%
-  mutate(instype_16,famstruct_16,StopCutWork_16)
+detach("package:plyr", unload = TRUE)
+dat16b<-dat16b%>%
+  rename(instype=instype_16,
+         famstruct=famstruct_16,
+         StopCutWork=StopCutWork_16)
 
-dat16b%>%
-  mutate(instype_16,famstruct_16,StopCutWork_16)
+dat17_18b<-dat17_18b%>%
+  rename(instype=InsType_1718,
+         famstruct=famstruct5_1718,
+         StopCutWork=StopCutWork_1718)
 
-dat16b%>%
-  mutate(instype_16,famstruct_16,StopCutWork_16)
+dat19_20b<-dat19_20b%>%
+  rename(instype=instype_1920,
+         famstruct=famstruct5_1920,
+         StopCutWork=StopCutWork_1920)
+
 
 ```
 
-Combine all 5 years (2016,2017-2018, 2019-2020)
-```{r}
+### Combine all 5 years (2016,2017-2018, 2019-2020)
+```{r message=FALSE, warning=FALSE}
+
+library(plyr)
+dat<-rbind.fill(dat16b,dat17_18b,dat19_20b) #fill non-matching columns with NA
+
+
+
 
 ```
+
+### Categorize these vars into 3 groups
+```{r message=FALSE, warning=FALSE}
+
+#
+#               cg_age_3cat,
+#               cg_gender,
+#               cg_marital_3cat,
+#               cg_education_3cat,
+#               cg_relationship_4cat,
+
+#               hcability_3cat,
+#               hcextent_3cat,
+#               athomehc_3cat,
+#               arrangehc_3cat,
+               
+#               k4q02_r_3cat
+#               c4q04_3cat,
+#               momage_3cat
+
+
+
+dat$AGE_GRP[dat$SC_AGE_YEARS<=4]<-"0-4"
+dat$AGE_GRP[dat$SC_AGE_YEARS %in% c(5:8)]<-"5-8"
+dat$AGE_GRP[dat$SC_AGE_YEARS %in% c(9:12)]<-"9-12"
+dat$AGE_GRP[dat$SC_AGE_YEARS %in% c(13:16)]<-"13-16"
+dat$AGE_GRP[dat$SC_AGE_YEARS>=16]<-">16"
+
+dat<-dat%>%
+  ## make sure the variables are factors
+  mutate(AGE_GRP = factor(AGE_GRP,levels = c("0-4","5-8","9-12","13-16",">16")), 
+         SC_SEX = factor(SC_SEX))
+```
+
+### Create survey object
+```{r message=FALSE, warning=FALSE}
+
+nsch_design<-svydesign(
+  id=~HHID,
+  strata = ~ STRATUM,
+  weights = ~ FWC_adj,
+  data = dat)
+
+```
+
+### Free memory
+```{r}
+#rm(list = c(dat16,dat16b,dat17_18,dat17_18b,dat19_20,dat19_20b))
+```
+
+
+### Descriptive statistics with weight estimates 
+
+### Using SURVYR package and SURVEY package
+
+```{r}
+detach("package:plyr", unload = TRUE)
+nsch_df_sv<-as_survey(nsch_design)
+```
+
+
+### Creating a subpopulation  
+subset(), filter() or even ] can be used on the survey objects to appropriately create sub-population data
+```{r}
+
+
+```
+
+
+```{r}
+nsch_df_sv%>%
+  group_by(SC_SEX)%>%
+  summarize(N=n(),
+            Average_age=survey_mean(SC_AGE_YEARS,vartype = c("ci")),
+            pct=survey_prop(prop_method = "likelihood",vartype = c("ci"))) #use Rao Scot Method
+
+
+
+```
+
+```{r}
+#FLIPPED PYRAMID
+library(apyramid)
+library(ggplot2)
+```
+
+```{r}
+## define x-axis limits and labels ---------------------------------------------
+## (update these numbers to be the values for your graph)
+max_prop <- 30      # choose the highest proportion you want to show 
+step <- 5           # choose the space you want between labels 
+
+## this part defines vector using the above numbers with axis breaks
+breaks <- c(
+    seq(max_prop/100 * -1, 0 - step/100, step/100), 
+    0, 
+    seq(0 + step / 100, max_prop/100, step/100)
+    )
+
+## this part defines vector using the above numbers with axis limits
+limits <- c(max_prop/100 * -1, max_prop/100)
+
+## this part defines vector using the above numbers with axis labels
+labels <-  c(
+      seq(max_prop, step, -step), 
+      0, 
+      seq(step, max_prop, step)
+    )
+
+
+```
+
+```{r}
+## plot the weighted sample population 
+weighted_population <- nsch_df_sv %>%
+  
+  age_pyramid(
+    age_group = "AGE_GRP",
+    split_by = "SC_SEX", 
+    proportion = TRUE) +
+  ## only show the x axis label (otherwise repeated in all three plots)
+  labs(title = "Weighted sample population", 
+       y = "", 
+       x = "")  + 
+  ## make the x axis the same for all plots 
+  scale_y_continuous(
+    breaks = breaks, 
+    limits = limits, 
+    labels = labels)
+
+weighted_population
+
+```
+
+
+
+### Generalized linear models
+```{r}
+#svyglm()
+
+```
+
+### CART using glmertree package
+
+```{r message=FALSE, warning=FALSE}
+library(glmertree)
+# Regression
+
+
+# Classification algorithms
+```
+
