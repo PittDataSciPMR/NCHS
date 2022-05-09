@@ -1,0 +1,284 @@
+---
+title: "NCHS"
+author: "Sanmi"
+date: "5/6/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Goal: TO download the complete dataset, clean and split into subsets for downstream analyses.
+
+```{r}
+rm(list = ls())
+library(readr)
+library(dplyr)
+library(survey)
+library(srvyr)
+
+```
+
+
+```{r}
+
+dat16<- read_csv("2016NSCHTopical_DRCv3_Sep2018.csv")
+dat17_18<- read_csv("2017-2018 NSCH_Topical_DRC_Dec 2019.csv")
+dat19_20<- read_csv("2019-2020 NSCH_Topical_CAHMI_DRC.csv")
+
+```
+
+
+For each year, adjust the weights so that they can be combined
+```{r}
+
+dat16$FWC_adj<-dat16$FWC/5
+dat17_18$FWC_adj<-(dat17_18$FWC_1718*2)/5
+dat19_20$FWC_adj<-(dat19_20$fwc_1920*2)/5
+
+```
+
+Select variables from each year
+```{r}
+
+dat19_20b<-dat19_20%>%
+  select(               instype_1920,
+                        SC_AGE_YEARS,
+            #   sc_age_3cat,
+            SC_SEX,
+            #   sc_sex,
+            SC_RACE_R,
+            #SC_RACE_R
+            #   sc_race_ethnic_16to20,
+               famstruct5_1920,
+               contains("fpl"),
+               HHLANGUAGE,
+               FAMCOUNT,
+               # Child Health Complexity Variables
+               HCABILITY,
+               HCEXTENT,
+               ATHOMEHC,
+               ARRANGEHC,
+               K4Q22_R,
+               K4Q23,
+               K4Q24_R,
+               K4Q36,
+               K4Q01,
+               K4Q02_R,
+               HOSPITALER,
+               K4Q20R,
+               BREATHING,
+               SWALLOWING,
+               STOMACH,
+               BLINDNESS,
+               K2Q43B,
+               PHYSICALPAIN,
+               # maybe not use
+               HANDS,
+               COORDINATION,
+               MEMORYCOND,
+               WALKSTAIRS,
+               DRESSING,
+               # other predictors
+               C4Q04,
+               K5Q20_R,
+               K5Q21,
+               K8Q35,
+               K2Q05,
+               MOMAGE,
+               StopCutWork_1920,
+               AVOIDCHG,
+               # health conditions that could be categories
+                    # mood/behavior dx
+                    K2Q33C,
+                    K2Q32C,
+                    K2Q34C,
+                    # ASD
+                    K2Q35C,
+                    # brain injury
+                    #K2Q46C,
+                    # CP
+                    K2Q61B,
+                    # epilepsy/seizure
+                    K2Q42C,
+                    # develop delay
+                    K2Q36C,
+                    # ID
+                    K2Q60C,
+                    # speach/language dx
+                    K2Q37C,
+                    # learning disorder
+                    K2Q30C,
+                #weight
+                    FWC_adj)
+
+dat17_18b<-dat17_18%>%
+  select(               InsType_1718,
+                        SC_AGE_YEARS,
+            #   sc_age_3cat,
+            SC_SEX,
+            #   sc_sex,
+            SC_RACE_R,
+            #SC_RACE_R
+            #   sc_race_ethnic_16to20,
+               famstruct5_1718,
+               contains("fpl"),
+               HHLANGUAGE,
+               FAMCOUNT,
+               # Child Health Complexity Variables
+               HCABILITY,
+               HCEXTENT,
+               ATHOMEHC,
+               ARRANGEHC,
+               K4Q22_R,
+               K4Q23,
+               K4Q24_R,
+               K4Q36,
+               K4Q01,
+               K4Q02_R,
+               HOSPITALER,
+               K4Q20R,
+               BREATHING,
+               SWALLOWING,
+               STOMACH,
+               BLINDNESS,
+               K2Q43B,
+               PHYSICALPAIN,
+               # maybe not use
+               HANDS,
+               COORDINATION,
+               MEMORYCOND,
+               WALKSTAIRS,
+               DRESSING,
+               # other predictors
+               C4Q04,
+               K5Q20_R,
+               K5Q21,
+               K8Q35,
+               K2Q05,
+               MOMAGE,
+               StopCutWork_1718,
+               AVOIDCHG,
+               # health conditions that could be categories
+                    # mood/behavior dx
+                    K2Q33C,
+                    K2Q32C,
+                    K2Q34C,
+                    # ASD
+                    K2Q35C,
+                    # brain injury
+                    K2Q46C,
+                    # CP
+                    K2Q61B,
+                    # epilepsy/seizure
+                    K2Q42C,
+                    # develop delay
+                    K2Q36C,
+                    # ID
+                    K2Q60C,
+                    # speach/language dx
+                    K2Q37C,
+                    # learning disorder
+                    K2Q30C,
+                #weight
+                    FWC_adj)
+
+dat16b<-dat16%>%
+  select(               instype_16,
+                        SC_AGE_YEARS,
+            #   sc_age_3cat,
+            SC_SEX,
+            #   sc_sex,
+            SC_RACE_R,
+            #SC_RACE_R
+            #   sc_race_ethnic_16to20,
+               famstruct_16,
+               contains("fpl"),
+               HHLANGUAGE,
+               FAMCOUNT,
+               # Child Health Complexity Variables
+               HCABILITY,
+               HCEXTENT,
+               ATHOMEHC,
+               ARRANGEHC,
+               K4Q22_R,
+               K4Q23,
+               K4Q24_R,
+               K4Q36,
+               K4Q01,
+               K4Q02_R,
+               HOSPITALER,
+               K4Q20R,
+               BREATHING,
+               SWALLOWING,
+               STOMACH,
+               BLINDNESS,
+               K2Q43B,
+               PHYSICALPAIN,
+               # maybe not use
+               HANDS,
+               COORDINATION,
+               MEMORYCOND,
+               WALKSTAIRS,
+               DRESSING,
+               # other predictors
+               C4Q04,
+               K5Q20_R,
+               K5Q21,
+               K8Q35,
+               K2Q05,
+               MOMAGE,
+               StopCutWork_16,
+               AVOIDCHG,
+               # health conditions that could be categories
+                    # mood/behavior dx
+                    K2Q33C,
+                    K2Q32C,
+                    K2Q34C,
+                    # ASD
+                    K2Q35C,
+                    # brain injury
+                    K2Q46C,
+                    # CP
+                    K2Q61B,
+                    # epilepsy/seizure
+                    K2Q42C,
+                    # develop delay
+                    K2Q36C,
+                    # ID
+                    K2Q60C,
+                    # speach/language dx
+                    K2Q37C,
+                    # learning disorder
+                    K2Q30C,
+                #weight
+                    FWC_adj)
+
+
+
+```
+
+Rename
+```{r}
+dat16b$instype_16
+
+dat16b%>%
+  mutate(instype_16,famstruct_16,StopCutWork_16)
+
+dat16b%>%
+  mutate(instype_16,famstruct_16,StopCutWork_16)
+
+dat16b%>%
+  mutate(instype_16,famstruct_16,StopCutWork_16)
+
+dat16b%>%
+  mutate(instype_16,famstruct_16,StopCutWork_16)
+
+```
+
+Combine all 5 years (2016,2017-2018, 2019-2020)
+```{r}
+
+```
