@@ -27,6 +27,8 @@ library(srvyr)
 
 ```{r message=FALSE, warning=FALSE}
 
+
+
 dat16<- read_csv("2016NSCHTopical_DRCv3_Sep2018.csv")
 dat17_18<- read_csv("2017-2018 NSCH_Topical_DRC_Dec 2019.csv")
 dat19_20<- read_csv("2019-2020 NSCH_Topical_CAHMI_DRC.csv")
@@ -303,8 +305,6 @@ library(plyr)
 dat<-rbind.fill(dat16b,dat17_18b,dat19_20b) #fill non-matching columns with NA
 
 
-
-
 ```
 
 ### Categorize these vars into 3 groups
@@ -430,6 +430,7 @@ weighted_population <- nsch_df_sv %>%
   labs(title = "Weighted sample population", 
        y = "", 
        x = "")  + 
+  
   ## make the x axis the same for all plots 
   scale_y_continuous(
     breaks = breaks, 
